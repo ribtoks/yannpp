@@ -6,7 +6,7 @@ In order to achieve this goal I prepared a small number of selected educational 
 # Understand
 In order to fully understand what is going on, I would recommend doing following:
 
-- read [great Michael Nielsen's online book](http://neuralnetworksanddeeplearning.com/) to understand all the basics
+- read [great Michael Nielsen's online book](http://neuralnetworksanddeeplearning.com/) to understand all the basics and do the exercises (at least derivation of BP1-BP4)
 - read ["Backpropagation In Convolutional Neural Networks"](https://github.com/ribtoks/yannpp/blob/master/docs/Backpropagation%20In%20Convolutional%20Neural%20Networks%20-%20DeepGrid.pdf) pdf in the `docs/` to understand how to prove backpropagation equations for convolutional layers
 - read ["A guide to convolution arithmetic"](https://github.com/ribtoks/yannpp/blob/master/docs/1603.07285.pdf) pdf in `docs/` to understand what is padding and how to convolve input and filter
 

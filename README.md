@@ -29,7 +29,7 @@ Main learning loop (as defined in `network2_t::backpropagate()`) looks like this
     }
 
     // backpropagate error
-    array3d_t<network2_t::data_type> error(result);
+    array3d_t error(result);
     for (size_t i = layers_size; i-- > 0;) {
         error = layers_[i]->backpropagate(error);
     }

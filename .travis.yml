@@ -1,0 +1,34 @@
+sudo: false
+language: cpp
+
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      sudo : true
+      env: BUILD_TYPE=Debug VERBOSE=1 GTEST_CATCH_EXCEPTIONS=0
+    - os: osx
+      compiler: clang
+      env: BUILD_TYPE=Debug VERBOSE=1 GTEST_CATCH_EXCEPTIONS=0
+
+addons:
+  apt:
+    # List of whitelisted in travis packages for ubuntu-precise can be found here:
+    #   https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-precise
+    # List of whitelisted in travis apt-sources:
+    #   https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
+    sources:
+    - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.7
+    packages:
+    - g++-4.9
+    - clang-3.7
+
+before_script:
+  - git submodule update --init --recursive
+
+script:
+  - mkdir build && cd build
+  - cmake .. -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
+  - make
+#  - make test ARGS=-V

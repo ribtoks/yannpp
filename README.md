@@ -41,10 +41,10 @@ This codebase contains it's own greatly simplified `ndarray` as in Numpy and it'
 `network1_t` as used in `examples/mnist_simple.cpp` is all-in-one implementation of network with fully-connected layers while `network2_t` is more "abstract" implementation that uses arbitrary layers in other examples.
 
 # Do
-Feel free to experiment. For example, `examples/mnist_deeplearning.cpp` file specifically contains lots of experimental code (e.g. reducing size of the input to be able to experiement with network topology, commented layers in the network itself etc.) that can show you how to experiment. Experimentation is required to select hyperparameters, to see if your network converges etc.
+Codebase should encourage you to experiment. For example, `examples/mnist_deeplearning.cpp` file specifically contains lots of experimental code (e.g. reducing size of the input to be able to experiement with network topology, commented layers in the network itself etc.) that can show you how to experiment. Experimentation is required to select hyperparameters, to see if your network converges etc.
 
 # Cope
-Feel free to say thank you it was useful. Also this code (as any other) may contain bugs or other problems - all contributions are highly welcome.
+Feel free to say thank you if it was useful. Also this code (as any other) may contain bugs or other problems - all contributions are highly welcome.
 
 - [Fork](https://help.github.com/forking/) yannpp repository on GitHub
 - Clone your fork locally
@@ -56,7 +56,7 @@ Feel free to say thank you it was useful. Also this code (as any other) may cont
 
 # Get out
 
-There are many other similar efforts through GitHub. Their common problems are code that is hard to read or code with too much magic inside (mainly related to python). Here's a short list with similar efforts with very easy code to understand:
+There are many other similar efforts on GitHub. Their common problems are: code that is hard to read or code with too much magic inside (mainly related to python). Here's a short list with similar efforts with very easy code to understand:
 
 - [Nympy-CNN](https://github.com/Alescontrela/Numpy-CNN)
 - [zeta-learn](https://github.com/jefkine/zeta-learn)

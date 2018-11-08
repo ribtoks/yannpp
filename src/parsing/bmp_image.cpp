@@ -1,7 +1,7 @@
 #include "bmp_image.h"
 #include <fstream>
 #include <cstring>
-#include <exception>
+#include <stdexcept>
 
 void bmp_image_t::save(const std::string &filepath) {
     const int h = data_.size()/width_;

@@ -1,5 +1,5 @@
 # yannpp
-This is an educational project that strives to help fully understand how convolutional neural networks work.
+This is an educational effort to help understand how deep neural networks work.
 
 In order to achieve this goal I prepared a small number of selected educational materials and heavily documented pure C++ implementation of CNN.
 

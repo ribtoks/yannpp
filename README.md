@@ -1,4 +1,7 @@
 # yannpp
+[![Build status](https://ci.appveyor.com/api/projects/status/p4coum570w8g3cxx/branch/master?svg=true)](https://ci.appveyor.com/project/Ribtoks/yannpp/branch/master) [![Build Status](https://travis-ci.org/ribtoks/yannpp.svg?branch=master)](https://travis-ci.org/ribtoks/yannpp)
+![license](https://img.shields.io/badge/license-MIT-blue.svg) ![copyright](https://img.shields.io/badge/%C2%A9-Taras_Kushnir-blue.svg) ![language](https://img.shields.io/badge/language-c++-blue.svg) ![c++](https://img.shields.io/badge/std-c++11-blue.svg) 
+
 This is an educational effort to help understand how deep neural networks work.
 
 In order to achieve this goal I prepared a small number of selected educational materials and heavily documented pure C++ implementation of CNN that classifies MNIST digits.
@@ -13,8 +16,6 @@ In order to fully understand what is going on, I would recommend doing following
 After this you will be able to understand code in the repo.
 
 # Get in
-[![Build status](https://ci.appveyor.com/api/projects/status/p4coum570w8g3cxx/branch/master?svg=true)](https://ci.appveyor.com/project/Ribtoks/yannpp/branch/master) [![Build Status](https://travis-ci.org/ribtoks/yannpp.svg?branch=master)](https://travis-ci.org/ribtoks/yannpp)
-![license](https://img.shields.io/badge/license-MIT-blue.svg) ![copyright](https://img.shields.io/badge/%C2%A9-Taras_Kushnir-blue.svg) ![language](https://img.shields.io/badge/language-c++-blue.svg) ![c++](https://img.shields.io/badge/std-c++11-blue.svg) 
 
 C++ code in the repo is simple enough to work in Windows/Mac/Linux. You can use CMake to compile it (check out `.travis.yml` or `appveyor.yml` to see how it's done in Linux or Windows).
 

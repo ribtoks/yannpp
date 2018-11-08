@@ -34,7 +34,11 @@ Main learning loop (as defined in `network2_t::backpropagate()`) looks like this
         error = layers_[i]->backpropagate(error);
     }
 
-Because of this simplicity most interesting things are located in `src/layers/` directory that contains implementations of those `feedforward()` and `backpropagate()` methods for each layer. This codebase contains it's own greatly simplified `ndarray` as in Numpy and it's called `array3d_t`. Most useful feature of the array is the ability to slice parts of it's data as subarrays.
+Because of this simplicity most interesting things are located in `src/layers/` directory that contains implementations of those `feedforward()` and `backpropagate()` methods for each layer. 
+
+This codebase contains it's own greatly simplified `ndarray` as in Numpy and it's called `array3d_t`. Most useful feature of the array is the ability to slice parts of it's data as subarrays.
+
+`network1_t` as used in `examples/mnist_simple.cpp` is all-in-one implementation of network with fully-connected layers while `network2_t` is more "abstract" implementation that uses arbitrary layers in other examples.
 
 # Do
 Feel free to experiment. For example, `examples/mnist_deeplearning.cpp` file specifically contains lots of experimental code (e.g. reducing size of the input to be able to experiement with network topology, commented layers in the network itself etc.) that can show you how to experiment. Experimentation is required to select hyperparameters, to see if your network converges etc.

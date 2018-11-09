@@ -12,9 +12,10 @@ network2_t::network2_t(std::initializer_list<network2_t::layer_type> layers):
 { }
 
 void network2_t::train(network2_t::training_data const &data,
-                       const optimizer_t<data_type> &strategy,
+                       optimizer_t<data_type> const &optimizer,
                        size_t epochs,
                        size_t minibatch_size) {
+    log("Training using %d inputs", data.size());
     // big chunk of data is used for training while
     // small chunk - for validation after some epochs
     const size_t training_size = 5 * data.size() / 6;
@@ -22,20 +23,17 @@ void network2_t::train(network2_t::training_data const &data,
     // generate indices from 1 to the number of inputs
     std::iota(eval_indices.begin(), eval_indices.end(), training_size);
 
-    for (size_t j = 0; j < epochs; j++) {
-        size_t k = 0;
+    for (size_t e = 0; e < epochs; e++) {
         auto indices_batches = batch_indices(training_size, minibatch_size);
-        for (auto &indices: indices_batches) {
-            if (k++ % 50 == 0) { log("Batched indices %d out of %d", k, indices_batches.size()); }
-            update_mini_batch(data, indices, strategy);
+        const size_t batches_size = indices_batches.size();
+
+        for (size_t b = 0; b < batches_size; b++) {
+            update_mini_batch(data, indices_batches[b], optimizer);
+            if (b % (batches_size/4) == 0) { log("Processed batch %d out of %d", b, batches_size); }
         }
 
-        //if (j % 2 == 0) {
-            auto result = evaluate(data, eval_indices);
-            log("Epoch %d: %d / %d", j, result, eval_indices.size());
-        //} else {
-        //    log("Epoch %d ended", j);
-        //}
+        auto result = evaluate(data, eval_indices);
+        log("Epoch %d: %d / %d", e, result, eval_indices.size());
     }
 
     auto result = evaluate(data, eval_indices);

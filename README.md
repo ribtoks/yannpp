@@ -19,7 +19,7 @@ After this you will be able to understand code in the repo.
 
 C++ code in the repo is simple enough to work in Windows/Mac/Linux. You can use CMake to compile it (check out `.travis.yml` or `appveyor.yml` to see how it's done in Linux or Windows).
 
-In order to use MNIST data you will need to unzip archives in the `data/` directory first.
+In order to use MNIST data you will need to unzip archives in the `data/` directory first. Also compiled executable accepts path to this `data/` directory as first command line argument.
 
 # See
 Main learning loop (as defined in `network2_t::backpropagate()`) looks like this:

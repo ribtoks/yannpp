@@ -4,6 +4,7 @@
 #include <vector>
 #include <cassert>
 #include <cmath>
+#include <algorithm>
 
 #include "common/array3d.h"
 #include "common/array3d_math.h"
@@ -188,6 +189,22 @@ public:
             nabla_weights_[i].reset(0);
             nabla_biases_[i].reset(0);
         }
+    }
+
+public:
+    void load(std::vector<array3d_t<T>> &&filter_weights,
+              std::vector<array3d_t<T>> &&filter_biases) {
+        assert(filter_weights_.size() == filter_weights.size());
+        assert(filter_biases_.size() == filter_biases.size());
+        assert(std::all_of(filter_weights.begin(), filter_weights.end(), [this](array3d_t<T> const &f) {
+            return (f.shape() == this->filter_shape_);
+        }));
+        assert(std::all_of(filter_biases.begin(), filter_biases.end(), [this](array3d_t<T> const &b) {
+            return (b.size() == 1 && b.shape().dim() == 0);
+        }));
+
+        filter_weights_ = std::move(filter_weights);
+        filter_biases_ = std::move(filter_biases);
     }
 
 private:

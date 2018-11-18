@@ -63,6 +63,14 @@ public:
 		nabla_w_.reset(0);
     }
 
+public:
+    void load(array3d_t<T> &&weights, array3d_t<T> &&bias) {
+        assert(weights_.shape() == weights.shape());
+        assert(bias_.shape() == bias.shape());
+        weights_ = std::move(weights);
+        bias_ = std::move(bias);
+    }
+
 private:
     // own data
     size_t dimension_;

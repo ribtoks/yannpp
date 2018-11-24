@@ -16,7 +16,6 @@ set(SOURCES
     common/shape.h
     common/array3d.h
     common/array3d_math.h
-    common/array3d_math.cpp
     common/log.h
     common/log.cpp
     common/utils.h
@@ -24,7 +23,6 @@ set(SOURCES
     optimizer/sdg_optimizer.h
     optimizer/optimizer.h
     network/network2.h
-    network/network2.cpp
 #    network/network1.h
 #    network/network1.cpp
     layers/fullyconnectedlayer.h

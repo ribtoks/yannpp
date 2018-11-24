@@ -31,18 +31,18 @@ int main(int argc, char* argv[]) {
     // reduce size for testing
     training_data.resize(training_data.size()/10);
 
-    activator_t<double> sigmoid_activator(sigmoid_v, sigmoid_derivative_v);
+    activator_t<double> sigmoid_activator(sigmoid_v<double>, sigmoid_derivative_v<double>);
     // derivative returns 1 because it is cancelled out when using cross-entropy
-    activator_t<double> softmax_activator(stable_softmax_v,
+    activator_t<double> softmax_activator(stable_softmax_v<double>,
                                           [](array3d_t<double> const &x){
         return array3d_t<double>(shape_row(x.size()), 1.0);});
-    activator_t<double> relu_activator(relu_v, relu_v);
+    activator_t<double> relu_activator(relu_v<double>, relu_v<double>);
     sdg_optimizer_t<double> sdg_optimizer(mini_batch_size,
                                         training_data.size(),
                                         decay_rate,
                                         learning_rate);
-    network2_t network(
-                std::initializer_list<network2_t::layer_type>(
+    network2_t<double> network(
+                std::initializer_list<network2_t<double>::layer_type>(
     {
                         std::make_shared<convolution_layer_t<double>>(
                         shape3d_t(28, 28, 1), // input size

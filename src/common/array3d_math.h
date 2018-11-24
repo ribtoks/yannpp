@@ -1,18 +1,69 @@
 #ifndef ARRAY3D_MATH_H
 #define ARRAY3D_MATH_H
 
-#include "common/array3d.h"
 #include <exception>
+#include <cmath>
+
+#include "common/array3d.h"
+
 
 namespace yannpp {
-    double sigmoid(double x);
-    double sigmoid_derivative(double x);
-    double relu(double x);
-    double relu_derivative(double x);
-    array3d_t<double> sigmoid_v(array3d_t<double> const &x);
-    array3d_t<double> sigmoid_derivative_v(array3d_t<double> const &x);
-    array3d_t<double> stable_softmax_v(array3d_t<double> const &x);
-    array3d_t<double> relu_v(array3d_t<double> const &x);
+    template<typename T>
+    T sigmoid(T x) {
+        return T(1.0)/(T(1.0) + exp(-x));
+    }
+
+    template<typename T>
+    T sigmoid_derivative(T x) {
+        T sigmoid_x = sigmoid(x);
+        return sigmoid_x * (T(1.0) - sigmoid_x);
+    }
+
+    template<typename T>
+    T relu(T x) {
+        return x < T(0.0) ? T(0.0) : x;
+    }
+
+    template<typename T>
+    array3d_t<T> sigmoid_v(array3d_t<T> const &x) {
+        array3d_t<T> result(x);
+        result.apply(sigmoid<T>);
+        return result;
+    }
+
+    template<typename T>
+    array3d_t<T> sigmoid_derivative_v(array3d_t<T> const &x) {
+        array3d_t<T> result(x);
+        result.apply(sigmoid_derivative<T>);
+        return result;
+    }
+
+    template<typename T>
+    array3d_t<T> stable_softmax_v(array3d_t<T> const &x) {
+        array3d_t<T> result(x);
+        const int size = (int)result.size();
+        T x_max = x.max();
+
+        T sum = 0.0;
+        for (int i = 0; i < size; i++) {
+            T fi = exp(x(i) - x_max);;
+            result(i) = fi;
+            sum += fi;
+        }
+
+        for (int i = 0; i < size; i++) {
+            result(i) /= sum;
+        }
+
+        return result;
+    }
+
+    template<typename T>
+    array3d_t<T> relu_v(array3d_t<T> const &x) {
+        array3d_t<T> result(x);
+        result.apply(relu<T>);
+        return result;
+    }
 
     template<typename T>
     size_t argmax1d(array3d_t<T> const &v) {

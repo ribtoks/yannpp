@@ -13,6 +13,8 @@
 #include "optimizer/sdg_optimizer.h"
 #include "parsing/mnist_dataset.h"
 
+using namespace yannpp;
+
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         throw std::runtime_error("Data root not specified through the command line");

@@ -26,6 +26,10 @@ namespace yannpp {
             layers_(layers)
         {}
 
+        network2_t(std::vector<layer_type> &&layers):
+            layers_(std::move(layers))
+        {}
+
     public:
         void train(network2_t::training_data const &data,
                    optimizer_t<data_type> const &optimizer,

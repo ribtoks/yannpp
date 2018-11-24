@@ -27,9 +27,9 @@ namespace yannpp {
                    size_t epochs,
                    size_t minibatch_size);
 
-    private:
         // feeds input a to the network and returns output
         t_d feedforward(t_d const &a);
+    private:
 
         // evaluates number of correctly classified inputs (validation data)
         size_t evaluate(training_data const &data, std::vector<size_t> const &indices);

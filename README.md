@@ -61,3 +61,4 @@ There are many other similar efforts on GitHub. Their common problems are: code 
 
 - [Nympy-CNN](https://github.com/Alescontrela/Numpy-CNN)
 - [zeta-learn](https://github.com/jefkine/zeta-learn)
+- [Machine Learning Numpy](https://github.com/huseinzol05/Machine-Learning-Numpy)

@@ -3,8 +3,6 @@
 
 #include <exception>
 #include <cmath>
-#include <cstdio>
-#include <vector>
 
 #include "common/array3d.h"
 #include "common/shape.h"

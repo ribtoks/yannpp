@@ -67,7 +67,7 @@ namespace yannpp {
 
         const int xn = indices[0].size();
         const bool xdots = x_ > xn;
-        printf("[");
+        printf(" [");
         for (int i = 0; i < xn - 1; i++) {
             int xi = indices[0][i];
             log_matrix(arr, xi, indices[1], indices[2]);

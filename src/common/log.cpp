@@ -71,9 +71,9 @@ namespace yannpp {
         for (int i = 0; i < xn - 1; i++) {
             int xi = indices[0][i];
             log_matrix(arr, xi, indices[1], indices[2]);
-            printf(",\n\n  ");
+            printf(",\n\n   ");
         }
-        if (xdots) { printf(" ..... \n\n  "); }
+        if (xdots) { printf(" ..... \n\n   "); }
         log_matrix(arr, xn - 1, indices[1], indices[2]);
 
         printf("]\n");

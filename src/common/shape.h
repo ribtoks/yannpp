@@ -159,7 +159,7 @@ namespace yannpp {
             auto &step = step_.data();
             auto &end = end_.data();
 
-            for (size_t j = 0; j < 3; j++) {
+            for (size_t j = 3; j --> 0;) {
                 idx[j] += step[j];
                 if (idx[j] <= end[j]) { break; }
                 idx[j] = 0;

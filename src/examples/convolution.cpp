@@ -8,15 +8,24 @@
 
 using namespace yannpp;
 
+void fill_array(array3d_t<float> &arr) {
+    int i = 0;
+    auto slice = arr.slice();
+    auto it = slice.iterator();
+    for (; it.is_valid(); ++it, i++) {
+        slice.at(*it) = (float)i;
+    }
+}
+
 int main(int argc, char* argv[]) {
-  std::vector<float> vx(3*3*3);
-  for (int i = 0; i < vx.size(); i++) { vx[i] = (float)i; }
+  array3d_t<float> filter_(shape3d_t(3, 3, 3), 0.f);
+  array3d_t<float> input_(shape3d_t(5, 5, 3), 0.f);
 
-  std::vector<float> vw(5*5*3);
-  for (int i = 0; i < vw.size(); i++) { vw[i] = (float)i; }
+  fill_array(filter_);
+  log(filter_);
 
-  array3d_t<float> filter_(shape3d_t(3, 3, 3), vx);
-  array3d_t<float> input_(shape3d_t(5, 5, 3), vw);
+  fill_array(input_);
+  log(input_);
     
   shape3d_t output_shape(input_.shape().x(), input_.shape().y(), 1);
   array3d_t<float> result(output_shape, 0.f);

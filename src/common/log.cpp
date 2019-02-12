@@ -28,7 +28,7 @@ namespace yannpp {
         }
 
         if (zdots) { printf("... , "); }
-        printf("%.6f", arr(xi, yj, zn - 1));
+        printf("%.6f", arr(xi, yj, indices[zn - 1]));
         printf("]");
     }
 
@@ -46,7 +46,7 @@ namespace yannpp {
             printf(",\n    ");
         }
         if (ydots) { printf(" ..... \n    "); }
-        log_row(arr, xi, yn - 1, zindices);
+        log_row(arr, xi, yindices[yn - 1], zindices);
         printf("]");
     }
 
@@ -74,7 +74,7 @@ namespace yannpp {
             printf(",\n\n   ");
         }
         if (xdots) { printf(" ..... \n\n   "); }
-        log_matrix(arr, xn - 1, indices[1], indices[2]);
+        log_matrix(arr, indices[0][xn - 1], indices[1], indices[2]);
 
         printf("]\n");
     }

@@ -37,6 +37,7 @@ namespace yannpp {
         T const &y() const { return v_[1]; }
         T const &z() const { return v_[2]; }
         std::array<T, 3> &data() { return v_; }
+        std::array<T, 3> const &data() const { return v_; }
 
     public:
         inline T v(dim_type d) const { return v_[(size_t)d]; }

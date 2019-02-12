@@ -173,37 +173,6 @@ namespace yannpp {
 
         return output;
     }
-
-    template<typename T>
-    void debug_print(array3d_t<T> const &v) {
-        printf("array3d_t (%d, %d, %d):", v.shape().x(), v.shape().y(), v.shape().z());
-
-        std::vector<int> indices[3];
-        auto &data = v.shape().data();
-        for (int i = 0; i < 3; i++) {
-            int maxmin = data[i] > 4 ? 4 : data[i];
-            for (int j = 0; j < maxmin; j++) { indices[i].push_back(j); }
-            if (data[i] > 4) { indices[i].push_back(data[i] - 1); }
-        }
-
-        puts("[");
-        for (int k = 0; k < indices[2].size(); k++) {
-            int z = indices[2][k];
-            puts("[");
-            for (int j = 0; j < indices[1].size(); j++) {
-                int y = indices[1][j];
-                puts("[");
-                printf("%.4f", v(0, j, k));
-                for (int i = 1; i < indices[0].size(); i++) {
-                    int x = indices[0][i];
-                    printf(", %.4f", v(x, y, z));
-                }
-                puts("]");
-                }
-            puts("]");
-        }
-        puts("]");
-    }
 }
 
 #endif // ARRAY3D_MATH_H

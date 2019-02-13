@@ -1,8 +1,10 @@
 #include "log.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <stdarg.h>
 #include <vector>
+#include <utility>
 
 #include "common/array3d.h"
 #include "common/shape.h"
@@ -15,66 +17,102 @@ namespace yannpp {
         fprintf(stdout, "\n");
     }
 
-    void log_row(array3d_t<float> const &arr, int xi, int yj, std::vector<int> const &indices) {
-        auto &data = arr.shape().data();
-        int z_ = data[2], zn = indices.size();
-        const bool zdots = z_ > zn;
+    bool segmentsOverlap(const std::pair<int, int> &a, const std::pair<int, int> &b) {
+        if (a.first <= b.first) {
+            return (b.first <= a.second) || (b.first == a.second+1);
+        } else {
+            return (a.first <= b.second) || (a.first == b.second+1);
+        }
+    }
 
-        printf("[");
-        for (int k = 0; k < zn - 1; k++) {
-            int zk = indices[k];
+    std::pair<int, int> unionOverlappingSegments(const std::pair<int, int> &a, const std::pair<int, int> &b) {
+        return std::make_pair(std::min(a.first, b.first), std::max(a.second, b.second));
+    }
 
-            printf("%.6f, ", arr(xi, yj, zk));
+    void log_zchunk(array3d_t<float> const &arr, int x, int y, std::pair<int, int> const &zrange) {
+        assert(zrange.first <= zrange.second);
+        for (int z = zrange.first; z < zrange.second; z++) {
+            printf("%.6f, ", arr(x, y, z));
         }
 
-        if (zdots) { printf("... , "); }
-        printf("%.6f", arr(xi, yj, indices[zn - 1]));
+        printf("%.6f", arr(x, y, zrange.second));
+    }
+
+    void log_row(array3d_t<float> const &arr, int x, int y) {
+        auto &data = arr.shape().data();
+        int z = arr.shape().z();
+        std::pair<int, int> start(0, std::min(std::max(z-2, 0), 3));
+        std::pair<int, int> end(std::max(0, z-2), z-1);
+
+        printf("[");
+
+        if (segmentsOverlap(start, end)) {
+            auto all = unionOverlappingSegments(start, end);
+            log_zchunk(arr, x, y, all);
+        } else {
+            log_zchunk(arr, x, y, start);
+            printf(", ... , ");
+            log_zchunk(arr, x, y, end);
+        }
+
         printf("]");
     }
 
-    void log_matrix(array3d_t<float> const &arr,
-                    int xi,
-                    std::vector<int> const &yindices,
-                    std::vector<int> const &zindices) {
-        auto &data = arr.shape().data();
-        int y_ = data[1], yn = yindices.size();
-        printf("[");
-        bool ydots = y_ > yn;
-        for (int j = 0; j < yn - 1; j++) {
-            int yj = yindices[j];
-            log_row(arr, xi, yj, zindices);
+    void log_ychunk(array3d_t<float> const &arr, int x, std::pair<int, int> const &yrange) {
+        for (int y = yrange.first; y < yrange.second; y++) {
+            log_row(arr, x, y);
             printf(",\n    ");
         }
-        if (ydots) { printf(" ..... \n    "); }
-        log_row(arr, xi, yindices[yn - 1], zindices);
+
+        log_row(arr, x, yrange.second);
+    }
+
+    void log_matrix(array3d_t<float> const &arr, int x) {
+        int y = arr.shape().y();
+        std::pair<int, int> start(0, std::min(std::max(y-2, 0), 3));
+        std::pair<int, int> end(std::max(0, y-2), y-1);
+
+        printf("[");
+
+        if (segmentsOverlap(start, end)) {
+            auto all = unionOverlappingSegments(start, end);
+            log_ychunk(arr, x, all);
+        } else {
+            log_ychunk(arr, x, start);
+            printf(",\n");
+            printf("     ..... \n    ");
+            log_ychunk(arr, x, end);
+        }
+
         printf("]");
+    }
+
+    void log_xchunk(array3d_t<float> const &arr, std::pair<int, int> const &xrange) {
+        for (int x = xrange.first; x < xrange.second; x++) {
+            log_matrix(arr, x);
+            printf(",\n\n   ");
+        }
+
+        log_matrix(arr, xrange.second);
     }
 
     void log(array3d_t<float> const &arr) {
-        auto &shape = arr.shape();
-        int x_ = shape.x(), y_ = shape.y(), z_ = shape.z();
-        auto &data = shape.data();
-        std::vector<int> indices[3];
-        int nodots[3] = {4, 3, 6};
-        for (size_t ii = 0; ii < 3; ii++) {
-            bool fits = data[ii] <= nodots[ii];
-            int maxn = fits ? data[ii] : nodots[ii];
-            for (int jj = 0; jj < maxn; jj++) { indices[ii].push_back(jj); }
-            if (!fits) { indices[ii].push_back(data[ii] - 1); }
-        }
+        printf("array3d_t(%d, %d, %d):\n", arr.shape().x(), arr.shape().y(), arr.shape().z());
+        int x = arr.shape().y();
+        std::pair<int, int> start(0, std::min(std::max(x-2, 0), 3));
+        std::pair<int, int> end(std::max(0, x-2), x-1);
 
-        printf("array3d_t(%d, %d, %d):\n", x_, y_, z_);
-
-        const int xn = indices[0].size();
-        const bool xdots = x_ > xn;
         printf("  [");
-        for (int i = 0; i < xn - 1; i++) {
-            int xi = indices[0][i];
-            log_matrix(arr, xi, indices[1], indices[2]);
-            printf(",\n\n   ");
+
+        if (segmentsOverlap(start, end)) {
+            auto all = unionOverlappingSegments(start, end);
+            log_xchunk(arr, all);
+        } else {
+            log_xchunk(arr, start);
+            printf(",\n\n");
+            printf("    ..... \n\n   ");
+            log_xchunk(arr, end);
         }
-        if (xdots) { printf(" ..... \n\n   "); }
-        log_matrix(arr, indices[0][xn - 1], indices[1], indices[2]);
 
         printf("]\n");
     }

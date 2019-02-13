@@ -10,12 +10,15 @@
 
 using namespace yannpp;
 
+#define SCALE (1.f)
+//#define SCALE (42.333553f)
+
 int fill_array(array3d_t<float> &arr, int start=0) {
     int i = start;
     auto slice = arr.slice();
     auto it = slice.iterator();
     for (; it.is_valid(); ++it, i++) {
-        slice.at(*it) = (float)i;
+        slice.at(*it) = i/SCALE;
     }
 
     return (i - 1);
@@ -84,7 +87,7 @@ std::vector<array3d_t<float>> create_filters(int count, shape3d_t const &shape) 
         for (auto width = 0; width < shape.x(); width++) {
             for (auto depth = 0; depth < shape.z(); depth++) {
                 for (auto fi = 0; fi < count; fi++, index++) {
-                    filters[fi](height, width, depth) = index;
+                    filters[fi](height, width, depth) = index/SCALE;
                 }
             }
         }

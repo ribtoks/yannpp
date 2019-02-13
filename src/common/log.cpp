@@ -98,7 +98,7 @@ namespace yannpp {
 
     void log(array3d_t<float> const &arr) {
         printf("array3d_t(%d, %d, %d):\n", arr.shape().x(), arr.shape().y(), arr.shape().z());
-        int x = arr.shape().y();
+        int x = arr.shape().x();
         std::pair<int, int> start(0, std::min(std::max(x-2, 0), 3));
         std::pair<int, int> end(std::max(0, x-2), x-1);
 

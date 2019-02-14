@@ -18,7 +18,6 @@ namespace yannpp {
         fully_connected_layer_t(size_t layer_in,
                                 size_t layer_out,
                                 activator_t<T> const &activator):
-            dimension_(layer_out),
             weights_(
                 shape3d_t(layer_out, layer_in, 1),
                 T(0), T(1)/sqrt((T)layer_in)),
@@ -74,7 +73,6 @@ namespace yannpp {
 
     private:
         // own data
-        size_t dimension_;
         array3d_t<T> weights_;
         array3d_t<T> bias_;
         activator_t<T> const &activator_;

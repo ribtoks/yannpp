@@ -119,7 +119,7 @@ namespace yannpp {
         inline int capacity() const { return v_[X]*v_[Y]*v_[Z]; }
 
         inline int index(int x, int y, int z) const {
-            return x + y*v_[X] + z*v_[X]*v_[Y];
+            return x*v_[Z]*v_[Y] + y*v_[Z] + z;
         }
 
         inline int index(point3d_t<int> const &i) const {

@@ -12,7 +12,7 @@ namespace yannpp {
     {
     }
 
-    std::vector<std::tuple<array3d_t<double>, array3d_t<double>>> mnist_dataset_t::training_data(int limit) {
+    std::vector<std::tuple<array3d_t<float>, array3d_t<float> > > mnist_dataset_t::training_data(int limit) {
         parsed_images_t parsed_images(data_root_ + "train-images-idx3-ubyte");
         auto itImg = parsed_images.begin();
         auto itImgEnd = parsed_images.end();
@@ -21,15 +21,15 @@ namespace yannpp {
         auto itLbl = parsed_labels.begin();
         auto itLblEnd = parsed_labels.end();
 
-        std::vector<std::tuple<array3d_t<double>, array3d_t<double>>> data;
+        std::vector<std::tuple<array3d_t<float>, array3d_t<float>>> data;
         const size_t count_limit = limit == -1 ? parsed_images.size() : limit;
         data.reserve(count_limit);
 
         for (;
              itImg != itImgEnd && itLbl != itLblEnd;
              ++itImg, ++itLbl) {
-            array3d_t<double> input(*itImg); input.mul(1.0 / 255.0); input.reshape(shape_matrix(28, 28));
-            array3d_t<double> result(shape_row(10), 0.0); result(*itLbl) = 1.0;
+            array3d_t<float> input(*itImg); input.mul(1.f / 255.f); input.reshape(shape3d_t(28, 28, 1));
+            array3d_t<float> result(shape_row(10), 0.0); result(*itLbl) = 1.f;
 
             data.emplace_back(std::make_tuple(std::move(input), std::move(result)));
 

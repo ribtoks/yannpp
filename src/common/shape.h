@@ -128,7 +128,6 @@ namespace yannpp {
     };
 
     static inline shape3d_t shape_row(int size) { return shape3d_t(size, 1, 1); }
-    static inline shape3d_t shape_matrix(int height, int width) { return shape3d_t(width, height, 1); }
 
     class index3d_iterator {
     public:

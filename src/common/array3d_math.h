@@ -99,6 +99,7 @@ namespace yannpp {
         return sum;
     }
 
+    // dot product of two slices (used in convolutions)
     template<typename T>
     T dot(typename array3d_t<T>::slice3d const &a, typename array3d_t<T>::slice3d const &b) {
         assert(a.shape() == b.shape());
@@ -113,25 +114,29 @@ namespace yannpp {
         return sum;
     }
 
+    // dot product of matrix (H, W, 1) and vector (W, 1, 1)
+    // result is vector of size (H, 1, 1)
     template<typename T>
     array3d_t<T> dot21(array3d_t<T> const &m, array3d_t<T> const &v) {
         assert(m.shape().dim() == 2);
         assert(v.shape().dim() == 1);
-        assert(m.shape().x() == v.shape().x());
+        assert(m.shape().y() == v.shape().x());
 
-        const size_t height = m.shape().y();
-        const size_t width = m.shape().x();
+        const size_t height = m.shape().x();
+        const size_t width = m.shape().y();
         array3d_t<T> result(shape_row(height), 0);
         for (size_t i = 0; i < height; i++) {
             T sum = 0;
             for (size_t j = 0; j < width; j++) {
-                sum += v(j) * m(j, i);
+                sum += v(j) * m(i, j);
             }
             result(i) = sum;
         }
         return result;
     }
 
+    // outer product of vectors (H, 1, 1) and (W, 1, 1)
+    // is matrix (H, W, 1)
     template<typename T>
     array3d_t<T> outer_product(array3d_t<T> const &a, array3d_t<T> const &b) {
         assert(a.shape().dim() == b.shape().dim());
@@ -140,33 +145,35 @@ namespace yannpp {
         const size_t height = a.shape().x();
         const size_t width = b.shape().x();
 
-        array3d_t<T> c(shape_matrix(height, width), 0);
+        array3d_t<T> c(shape3d_t(height, width, 1), 0);
 
         for (size_t i = 0; i < height; i++) {
             for (size_t j = 0; j < width; j++) {
-                c(j, i) = a(i) * b(j);
+                c(i, j) = a(i) * b(j);
             }
         }
 
         return c;
     }
 
+    // dot product of matrix (H, W, 1) and vector (H, 1, 1) columnwise
+    // result is vector (W, 1, 1)
     template<typename T>
     array3d_t<T> transpose_dot21(array3d_t<T> const &m, array3d_t<T> const &v) {
         assert(m.shape().dim() == 2);
         assert(v.shape().dim() == 1);
-        assert(m.shape().y() == v.shape().x());
+        assert(m.shape().x() == v.shape().x());
 
-        const size_t width = m.shape().x();
-        const size_t height = m.shape().y();
+        const size_t width = m.shape().y();
+        const size_t height = m.shape().x();
         array3d_t<T> output(shape_row(width), 0);
 
-        for (size_t i = 0; i < width; i++) {
+        for (size_t j = 0; j < width; j++) {
             T sum = 0;
-            for (size_t j = 0; j < height; j++) {
-                sum += m(i, j) * v(j);
+            for (size_t i = 0; i < height; i++) {
+                sum += m(i, j) * v(i);
             }
-            output(i) = sum;
+            output(j) = sum;
         }
 
         return output;

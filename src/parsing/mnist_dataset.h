@@ -15,7 +15,7 @@ namespace yannpp {
         // returns mnist dataset as vector of tuples with inputs and vectorized output
         // input is normalized pixel data and output is vector of zeros with the only
         // "one" on the index of corresponding digit (0-9) which is encoded by the image
-        std::vector<std::tuple<array3d_t<double>, array3d_t<double>>> training_data(int limit=-1);
+        std::vector<std::tuple<array3d_t<float>, array3d_t<float>>> training_data(int limit=-1);
         void save_as_images(int limit = -1);
 
     private:

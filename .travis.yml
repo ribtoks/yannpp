@@ -26,6 +26,7 @@ addons:
 
 before_script:
   - git submodule update --init --recursive
+  - tar -xf data/*.gz -C data/
 
 script:
   - mkdir build && cd build

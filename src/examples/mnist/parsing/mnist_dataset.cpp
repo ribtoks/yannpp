@@ -19,11 +19,17 @@ namespace yannpp {
     }
 
     std::vector<std::tuple<array3d_t<float>, array3d_t<float> > > mnist_dataset_t::training_data(int limit) {
+#ifdef _WIN32
+        parsed_images_t parsed_images(data_root_ + "train-images.idx3-ubyte");
+        parsed_labels_t parsed_labels(data_root_ + "train-labels.idx1-ubyte");
+#else
         parsed_images_t parsed_images(data_root_ + "train-images-idx3-ubyte");
+        parsed_labels_t parsed_labels(data_root_ + "train-labels-idx1-ubyte");
+#endif
+
         auto itImg = parsed_images.begin();
         auto itImgEnd = parsed_images.end();
 
-        parsed_labels_t parsed_labels(data_root_ + "train-labels-idx1-ubyte");
         auto itLbl = parsed_labels.begin();
         auto itLblEnd = parsed_labels.end();
 

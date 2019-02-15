@@ -26,7 +26,7 @@ addons:
 
 before_script:
   - git submodule update --init --recursive
-  - tar -xf data/*.gz -C data/
+  - for f in ./data/*.gz; do gzip -c "${f}" > ./data/$(basename "${f}" .gz); done
 
 script:
   - mkdir build && cd build

@@ -214,8 +214,8 @@ namespace yannpp {
         virtual void load(std::vector<array3d_t<T>> &&weights, std::vector<array3d_t<T>> &&biases) override {
             const int filters_number = conv_shape_.z();
 
-            assert(filter_weights_.size() == filters_number);
-            assert(filter_biases_.size() == filters_number);
+            assert(weights.size() == filters_number);
+            assert(biases.size() == filters_number);
             assert(std::all_of(weights.begin(), weights.end(), [this](array3d_t<T> const &f) {
                        return (f.shape() == this->filter_shape_);
                    }));

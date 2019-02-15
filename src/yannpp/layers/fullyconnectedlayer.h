@@ -22,10 +22,7 @@ namespace yannpp {
                                 layer_metadata_t const &metadata = {}):
             layer_base_t<T>(metadata),
             activator_(activator),
-            input_shape_(layer_out, layer_in, 1),
-            output_(shape_row(layer_out), 0),
-            nabla_w_(shape3d_t(layer_out, layer_in, 1), 0),
-            nabla_b_(shape_row(layer_out), 0)
+            input_shape_(layer_out, layer_in, 1)
         { }
 
     public:
@@ -43,6 +40,9 @@ namespace yannpp {
                             shape_row(layer_out),
                             T(0), T(1));
             }
+
+            nabla_w_ = array3d_t<T>(shape3d_t(layer_out, layer_in, 1), 0);
+            nabla_b_ = array3d_t<T>(shape_row(layer_out), 0);
         }
 
         virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
@@ -81,8 +81,10 @@ namespace yannpp {
             const int layer_in = input_shape_.y(), layer_out = input_shape_.x();
             shape3d_t weight_shape(layer_out, layer_in, 1);
 
-            assert(weights_.shape() == weight_shape);
-            assert(bias_.shape() == shape_row(layer_out));
+            assert(!weights.empty());
+            assert(!biases.empty());
+            assert(weights[0].shape() == weight_shape);
+            assert(biases[0].shape() == shape_row(layer_out));
 
             weights_ = std::move(weights[0]);
             bias_ = std::move(biases[0]);

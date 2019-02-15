@@ -11,6 +11,14 @@
 #include "parsing/bmp_image.h"
 #endif
 
+#ifdef _WIN32
+    #define TRAIN_IMAGES_FILE "train-images.idx3-ubyte"
+    #define TRAIN_LABELS_FILE "train-labels.idx1-ubyte"
+#else
+    #define TRAIN_IMAGES_FILE "train-images-idx3-ubyte"
+    #define TRAIN_LABELS_FILE "train-labels-idx1-ubyte"
+#endif
+
 namespace yannpp {
     mnist_dataset_t::mnist_dataset_t(const std::string &data_root):
         data_root_(data_root)
@@ -19,17 +27,11 @@ namespace yannpp {
     }
 
     std::vector<std::tuple<array3d_t<float>, array3d_t<float> > > mnist_dataset_t::training_data(int limit) {
-#ifdef _WIN32
-        parsed_images_t parsed_images(data_root_ + "train-images.idx3-ubyte");
-        parsed_labels_t parsed_labels(data_root_ + "train-labels.idx1-ubyte");
-#else
-        parsed_images_t parsed_images(data_root_ + "train-images-idx3-ubyte");
-        parsed_labels_t parsed_labels(data_root_ + "train-labels-idx1-ubyte");
-#endif
-
+        parsed_images_t parsed_images(data_root_ + TRAIN_IMAGES_FILE);
         auto itImg = parsed_images.begin();
         auto itImgEnd = parsed_images.end();
 
+        parsed_labels_t parsed_labels(data_root_ + TRAIN_LABELS_FILE);
         auto itLbl = parsed_labels.begin();
         auto itLblEnd = parsed_labels.end();
 

@@ -21,7 +21,7 @@ add_executable(yannpp_test ${SOURCES})
 FILE(TO_NATIVE_PATH ${DATA_DIR} DATA_ROOT)
 
 if(WIN32)
-  STRING(REGEX REPLACE "\\\\" "\\\\\\\\" DATA_ROOT ${DATA} )
+  STRING(REGEX REPLACE "\\\\" "\\\\\\\\" DATA_ROOT ${DATA_ROOT} )
 endif()
 
 add_definitions(-DDATADIR=${DATA_ROOT})

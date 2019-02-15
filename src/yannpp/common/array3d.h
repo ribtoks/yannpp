@@ -125,6 +125,13 @@ namespace yannpp {
             assert(v_.size() == shape_.capacity());
         }
 
+        array3d_t(shape3d_t const &shape, std::vector<T> &&v):
+            shape_(shape),
+            v_(std::move(v))
+        {
+            assert(v_.size() == shape_.capacity());
+        }
+
         template<typename Q>
         array3d_t(const std::vector<Q> &other):
             shape_(shape_row(other.size()))

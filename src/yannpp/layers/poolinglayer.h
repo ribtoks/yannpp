@@ -1,8 +1,9 @@
 #ifndef POOLINGLAYER_H
 #define POOLINGLAYER_H
 
-#include <yannpp/layers/layer_base.h>
 #include <yannpp/common/shape.h>
+#include <yannpp/layers/layer_base.h>
+#include <yannpp/layers/layer_metadata.h>
 
 namespace yannpp {
 #define POOL_DIM(input, pool, stride) (((input) - (pool))/(stride) + 1)
@@ -11,7 +12,9 @@ namespace yannpp {
     class pooling_layer_t: public layer_base_t<T> {
     public:
         pooling_layer_t(size_t window_size,
-                        int stride_length):
+                        int stride_length,
+                        layer_metadata_t const &metadata = {}):
+            layer_base_t<T>(metadata),
             window_size_(window_size),
             input_shape_(0, 0, 0),
             stride_(stride_length, stride_length, 0)

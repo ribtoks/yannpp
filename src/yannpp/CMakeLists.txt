@@ -24,6 +24,7 @@ set(SOURCES
     layers/crossentropyoutputlayer.h
     layers/convolutionlayer.h
     layers/layer_base.h
+    layers/layer_metadata.h
     network/activator.h)
 
 add_library(yannpp SHARED STATIC ${SOURCES})

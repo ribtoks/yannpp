@@ -11,6 +11,7 @@
 #include <yannpp/common/shape.h>
 #include <yannpp/common/utils.h>
 #include <yannpp/layers/layer_base.h>
+#include <yannpp/layers/layer_metadata.h>
 #include <yannpp/network/activator.h>
 #include <yannpp/optimizer/optimizer.h>
 
@@ -30,7 +31,9 @@ namespace yannpp {
                             int filters_number,
                             int stride_length,
                             padding_type padding,
-                            activator_t<T> const &activator):
+                            activator_t<T> const &activator,
+                            layer_metadata_t const &metadata={}):
+            layer_base_t<T>(metadata),
             input_shape_(input_shape),
             filter_shape_(filter_shape),
             // shape of the result of convolution of input and kernel/filter

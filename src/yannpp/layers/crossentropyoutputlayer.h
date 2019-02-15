@@ -1,15 +1,17 @@
 #ifndef CROSSENTROPYOUPTUTLAYER_H
 #define CROSSENTROPYOUPTUTLAYER_H
 
-#include <yannpp/network/activator.h>
 #include <yannpp/layers/layer_base.h>
+#include <yannpp/layers/layer_metadata.h>
+#include <yannpp/network/activator.h>
 #include <yannpp/optimizer/optimizer.h>
 
 namespace yannpp {
     template <typename T>
     class crossentropy_output_layer_t : public layer_base_t<T> {
     public:
-        crossentropy_output_layer_t()
+        crossentropy_output_layer_t(layer_metadata_t const &metadata={}):
+            layer_base_t<T>(metadata)
         { }
 
     public:

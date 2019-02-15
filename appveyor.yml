@@ -3,28 +3,28 @@ version: 0.0.{build}-{branch}
 clone_folder: c:\projects\yannpp
 
 image:
-- Visual Studio 2017
+  - Visual Studio 2017
 
 configuration:
-  - Debug
-#- Release
+  - Release
 
 skip_commits:
   message: /.*\[ci skip\]/       # Regex for matching commit message
 
 platform:
-- x64
+  - x64
 
 before_build:
- - git submodule update --init --recursive
- - mkdir build
- - cd build
- - cmake --version
- - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
- - cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug
+  - git submodule update --init --recursive
+  - 7z x data\*.gz -odata
+  - mkdir build
+  - cd build
+  - cmake --version
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
 
 build_script:
   - nmake.exe
 
-# test_script:
-#   - nmake test ARGS=-V
+test_script:
+  - nmake test ARGS=-V

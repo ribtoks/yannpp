@@ -63,6 +63,7 @@ TEST_F (MnistTests, LearnMnistFcTest) {
 
     size_t epochs = 2;
 
+    network.init_layers();
     network.train(training_data_,
                   sdg_optimizer,
                   epochs,
@@ -126,6 +127,7 @@ TEST_F (MnistTests, DeepLearningMnistTest) {
 
     size_t epochs = 1;
 
+    network.init_layers();
     network.train(training_data_,
                   sdg_optimizer,
                   epochs,

@@ -21,12 +21,6 @@ namespace yannpp {
                                 activator_t<T> const &activator,
                                 layer_metadata_t const &metadata = {}):
             layer_base_t<T>(metadata),
-            weights_(
-                shape3d_t(layer_out, layer_in, 1),
-                T(0), T(1)/sqrt((T)layer_in)),
-            bias_(
-                shape_row(layer_out),
-                T(0), T(1)),
             activator_(activator),
             input_shape_(layer_out, layer_in, 1),
             output_(shape_row(layer_out), 0),
@@ -35,6 +29,22 @@ namespace yannpp {
         { }
 
     public:
+        virtual void init() override {
+            const int layer_in = input_shape_.y(), layer_out = input_shape_.x();
+
+            if (weights_.size() == 0) {
+                weights_ = array3d_t<T>(
+                               shape3d_t(layer_out, layer_in, 1),
+                               T(0), T(1)/sqrt((T)layer_in));
+            }
+
+            if (bias_.size() == 0) {
+                bias_ = array3d_t<T>(
+                            shape_row(layer_out),
+                            T(0), T(1));
+            }
+        }
+
         virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
             input_shape_ = input.shape();
             input_ = input.flatten();
@@ -68,8 +78,12 @@ namespace yannpp {
 
     public:
         virtual void load(std::vector<array3d_t<T>> &&weights, std::vector<array3d_t<T>> &&biases) override {
-            assert(weights_.shape() == weights[0].shape());
-            assert(bias_.shape() == biases[0].shape());
+            const int layer_in = input_shape_.y(), layer_out = input_shape_.x();
+            shape3d_t weight_shape(layer_out, layer_in, 1);
+
+            assert(weights_.shape() == weight_shape);
+            assert(bias_.shape() == shape_row(layer_out));
+
             weights_ = std::move(weights[0]);
             bias_ = std::move(biases[0]);
         }

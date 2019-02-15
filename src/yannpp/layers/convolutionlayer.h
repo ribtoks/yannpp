@@ -45,22 +45,38 @@ namespace yannpp {
             activator_(activator)
         {
             assert(filter_shape.z() == input_shape.z());
-            filter_weights_.reserve(filters_number);
-            filter_biases_.reserve(filters_number);
-            nabla_weights_.reserve(filters_number);
-            nabla_biases_.reserve(filters_number);
-            // all neurons in each filter share same weights and bias
-            for (int i = 0; i < filters_number; i++) {
-                filter_weights_.emplace_back(
-                            filter_shape,
-                            T(0), T(1)/sqrt((T)filter_shape.capacity()));
-                filter_biases_.emplace_back(shape_row(1), 0);
-                nabla_weights_.emplace_back(filter_shape, 0);
-                nabla_biases_.emplace_back(shape_row(1), 0);
-            }
         }
 
     public:
+        virtual void init() override {
+            assert(filter_weights_.size() == filter_biases_.size());
+
+            const int filters_number = conv_shape_.z();
+
+            if (filter_weights_.empty()) {
+                filter_weights_.reserve(filters_number);
+                filter_biases_.reserve(filters_number);
+
+                // all neurons in each filter share same weights and bias
+                for (int i = 0; i < filters_number; i++) {
+                    filter_weights_.emplace_back(
+                                filter_shape_,
+                                T(0), T(1)/sqrt((T)filter_shape_.capacity()));
+                    filter_biases_.emplace_back(shape_row(1), 0);
+                }
+            }
+
+            if (nabla_weights_.empty()) {
+                nabla_weights_.reserve(filters_number);
+                nabla_biases_.reserve(filters_number);
+
+                for (int i = 0; i < filters_number; i++) {
+                    nabla_weights_.emplace_back(filter_shape_, 0);
+                    nabla_biases_.emplace_back(shape_row(1), 0);
+                }
+            }
+        }
+
         virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
             assert(input.shape() == input_shape_);
 
@@ -195,10 +211,11 @@ namespace yannpp {
             }
         }
 
-    public:
         virtual void load(std::vector<array3d_t<T>> &&weights, std::vector<array3d_t<T>> &&biases) override {
-            assert(filter_weights_.size() == weights.size());
-            assert(filter_biases_.size() == biases.size());
+            const int filters_number = conv_shape_.z();
+
+            assert(filter_weights_.size() == filters_number);
+            assert(filter_biases_.size() == filters_number);
             assert(std::all_of(weights.begin(), weights.end(), [this](array3d_t<T> const &f) {
                        return (f.shape() == this->filter_shape_);
                    }));

@@ -15,6 +15,8 @@ namespace yannpp {
         { }
 
     public:
+        virtual void init() override { }
+
         virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
             last_activation_ = input.clone();
             return input;

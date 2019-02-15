@@ -72,6 +72,7 @@ int main(int argc, char* argv[]) {
 
     size_t epochs = 60;
 
+    network.init_layers();
     network.train(training_data,
                   sdg_optimizer,
                   epochs,

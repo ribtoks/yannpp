@@ -31,6 +31,12 @@ namespace yannpp {
         {}
 
     public:
+        void init_layers() {
+            for (auto &l: layers_) {
+                l->init();
+            }
+        }
+
         void train(network2_t::training_data const &data,
                    optimizer_t<data_type> const &optimizer,
                    size_t epochs,

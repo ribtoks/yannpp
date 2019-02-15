@@ -21,6 +21,8 @@ namespace yannpp {
         { }
 
     public:
+        virtual void init() override { }
+
         virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
             input_shape_ = input.shape();
             // downsample input using window with step stride

@@ -121,7 +121,9 @@ namespace yannpp {
         array3d_t(shape3d_t const &shape, std::vector<T> const &v):
             shape_(shape),
             v_(v)
-        {}
+        {
+            assert(v_.size() == shape_.capacity());
+        }
 
         template<typename Q>
         array3d_t(const std::vector<Q> &other):

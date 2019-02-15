@@ -21,6 +21,7 @@ namespace yannpp {
         virtual array3d_t<T> backpropagate(array3d_t<T> const &error) = 0;
         virtual void load(std::vector<array3d_t<T>> &&weights, std::vector<array3d_t<T>> &&biases) = 0;
         virtual void optimize(optimizer_t<T> const &) = 0;
+        virtual void init() = 0;
 
     public:
         layer_metadata_t const &get_metadata() const { return metadata_; }

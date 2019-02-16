@@ -292,6 +292,7 @@ namespace yannpp {
              */
             auto patches = image_patches();
             auto filters = flat_filters();
+            auto biases = flat_biases();
 
             const shape3d_t output_shape = this->get_output_shape();
             std::vector<T> result;
@@ -300,6 +301,7 @@ namespace yannpp {
             const size_t psize = patches.size();
             for (size_t i = 0; i < psize; i++) {
                 auto conv = dot21(filters, patches[i]);
+                conv.add(biases);
                 result.insert(result.end(), conv.data().begin(), conv.data().end());
             }
 
@@ -352,6 +354,16 @@ namespace yannpp {
             }
 
             return patches;
+        }
+
+        array3d_t<T> flat_biases() {
+            const size_t size = this->filter_biases_.size();
+            std::vector<T> biases;
+            biases.reserve(size);
+            for (size_t i = 0; i < size; i++) {
+                biases.push_back(this->filter_biases_[i](0));
+            }
+            return array3d_t<T>(shape3d_t(size, 1, 1), std::move(biases));
         }
     };
 }

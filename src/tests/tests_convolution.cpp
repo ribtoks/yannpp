@@ -80,7 +80,7 @@ std::vector<yannpp::array3d_t<float>> create_biases(int count) {
     std::vector<yannpp::array3d_t<float>> biases;
 
     for (auto fi = 0; fi < count; fi++) {
-        biases.emplace_back(yannpp::shape3d_t(1, 1, 1), 0.f);
+        biases.emplace_back(yannpp::shape3d_t(1, 1, 1), fi + 0.5f);
     }
 
     return biases;

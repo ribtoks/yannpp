@@ -67,6 +67,20 @@ namespace yannpp {
                 return imax;
             }
 
+            std::vector<T> extract() {
+                index3d_iterator it = iterator();
+                std::vector<T> data;
+                data.reserve(shape_.capacity());
+                for (; it.is_valid(); ++it) {
+                    T v = 0;
+                    if (in_bounds(*it)) {
+                        v = at(*it);
+                    }
+                    data.push_back(v);
+                }
+                return data;
+            }
+
         private:
             inline size_t array_index(int x, int y, int z) const {
                 return array_.get().shape_.index(start_.add(x, y, z));

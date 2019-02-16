@@ -37,7 +37,7 @@ protected:
     std::vector<std::tuple<yannpp::array3d_t<float>, yannpp::array3d_t<float>>> training_data_;
 };
 
-TEST_F (MnistTests, LearnMnistFcTest) {
+TEST_F (MnistTests, LearnMnistDenseTest) {
     using namespace yannpp;
 
     size_t mini_batch_size = 10;
@@ -101,7 +101,7 @@ TEST_F (MnistTests, DeepLearningMnistTest) {
     network2_t<float> network(
                 std::initializer_list<network2_t<float>::layer_type>(
     {
-                        std::make_shared<convolution_layer_t<float>>(
+                        std::make_shared<convolution_layer_loop_t<float>>(
                         shape3d_t(28, 28, 1), // input size
                         shape3d_t(5, 5, 1), // filter size
                         10, // filters count
@@ -111,7 +111,7 @@ TEST_F (MnistTests, DeepLearningMnistTest) {
                         std::make_shared<pooling_layer_t<float>>(
                         2, // window_size
                         2), // stride length
-                        /*std::make_shared<convolution_layer_t<float>>(
+                        /*std::make_shared<convolution_layer_loop_t<float>>(
                         shape3d_t(12, 12, 20), // input size
                         shape3d_t(5, 5, 20), // filter size
                         20,

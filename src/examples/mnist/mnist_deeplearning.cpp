@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
     network2_t<float> network(
                 std::initializer_list<network2_t<float>::layer_type>(
     {
-                        std::make_shared<convolution_layer_t<float>>(
+                        std::make_shared<convolution_layer_loop_t<float>>(
                         shape3d_t(28, 28, 1), // input size
                         shape3d_t(5, 5, 1), // filter size
                         10, // filters count
@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
                         std::make_shared<pooling_layer_t<float>>(
                         2, // window_size
                         2), // stride length
-                        /*std::make_shared<convolution_layer_t<float>>(
+                        /*std::make_shared<convolution_layer_loop_t<float>>(
                         shape3d_t(12, 12, 20), // input size
                         shape3d_t(5, 5, 20), // filter size
                         20,

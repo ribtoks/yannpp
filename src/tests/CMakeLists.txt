@@ -10,6 +10,7 @@ set(SOURCES
     ${MNIST_SOURCE_DIR}/parsing/parsed_images.h
     ${MNIST_SOURCE_DIR}/parsing/parsed_images.cpp
     tests_main.cpp
+    tests_convolution.cpp
     tests_mnist.cpp)
 
 add_executable(yannpp_test ${SOURCES})

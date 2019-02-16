@@ -119,3 +119,37 @@ TEST (ConvolutionTests, LoopFeedForwardSameWith2DSamePaddingTest) {
     ASSERT_TRUE(arrays_equal(loop.feedforward(input),
                              matrix.feedforward(input)));
 }
+
+TEST (ConvolutionTests, LoopFeedForwardSameWith2DValidPaddingTest) {
+    using namespace yannpp;
+
+    shape3d_t filter_shape(3, 3, 5);
+    shape3d_t input_shape(5, 5, 5);
+    int filters_number = 10;
+    int stride_length = 1;
+
+    auto input = create_input(input_shape);
+
+    convolution_layer_loop_t<float> loop(
+                input_shape,
+                filter_shape,
+                filters_number,
+                stride_length,
+                padding_type::valid,
+                relu_activator);
+    loop.load(create_filters(filters_number, filter_shape),
+              create_biases(filters_number));
+
+    convolution_layer_2d_t<float> matrix(
+                input_shape,
+                filter_shape,
+                filters_number,
+                stride_length,
+                padding_type::valid,
+                relu_activator);
+    matrix.load(create_filters(filters_number, filter_shape),
+              create_biases(filters_number));
+
+    ASSERT_TRUE(arrays_equal(loop.feedforward(input),
+                             matrix.feedforward(input)));
+}

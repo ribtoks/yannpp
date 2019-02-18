@@ -390,7 +390,7 @@ namespace yannpp {
             for (size_t x = 0; x < this->input_shape_.x(); x++) {
                 for (size_t y = 0; y < this->input_shape_.y(); y++) {
                     for (size_t z = 0; z < this->input_shape_.z(); z++) {
-                        delta_next(y, x, z) = delta_input_channel[z](x*this->input_shape_.y() + y);
+                        delta_next(x, y, z) = delta_input_channel[z](y*this->input_shape_.x() + x);
                     }
                 }
             }
@@ -526,10 +526,6 @@ namespace yannpp {
             }
 
             return deltas;
-        }
-
-        std::vector<array3d_t<T>> reshape_filters() {
-
         }
 
     private:

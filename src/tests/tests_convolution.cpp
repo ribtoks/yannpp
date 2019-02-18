@@ -58,7 +58,7 @@ yannpp::array3d_t<float> create_input(yannpp::shape3d_t const &shape) {
 }
 
 yannpp::array3d_t<float> create_error(yannpp::shape3d_t const &shape) {
-    return yannpp::array3d_t<float>(shape, 0.5f, 0.8f);
+    return yannpp::array3d_t<float>(shape, 0.f, 0.1f);
 }
 
 std::vector<yannpp::array3d_t<float>> create_filters(int count, yannpp::shape3d_t const &shape) {
@@ -116,11 +116,11 @@ private:
     nabla_array nabla_b_;
 };
 
-TEST (ConvolutionTests, LoopFeedForwardWith2DSamePaddingTest) {
+TEST (ConvolutionTests, FeedForwardSamePaddingTest) {
     using namespace yannpp;
 
     shape3d_t filter_shape(3, 3, 5);
-    shape3d_t input_shape(5, 5, 5);
+    shape3d_t input_shape(15, 15, 5);
     int filters_number = 10;
     int stride_length = 1;
 
@@ -151,11 +151,11 @@ TEST (ConvolutionTests, LoopFeedForwardWith2DSamePaddingTest) {
                              matrix.feedforward(input)));
 }
 
-TEST (ConvolutionTests, LoopFeedForwardWith2DValidPaddingTest) {
+TEST (ConvolutionTests, FeedForwardValidPaddingTest) {
     using namespace yannpp;
 
     shape3d_t filter_shape(3, 3, 5);
-    shape3d_t input_shape(5, 5, 5);
+    shape3d_t input_shape(15, 15, 5);
     int filters_number = 10;
     int stride_length = 1;
 
@@ -190,11 +190,12 @@ using conv_loop_ptr = std::shared_ptr<yannpp::convolution_layer_loop_t<float>>;
 using conv_matrix_ptr = std::shared_ptr<yannpp::convolution_layer_2d_t<float>>;
 
 void prepare_layers_for_comparison(conv_loop_ptr &loop,
-                                   conv_matrix_ptr &matrix) {
+                                   conv_matrix_ptr &matrix,
+                                   yannpp::padding_type padding) {
     using namespace yannpp;
 
     shape3d_t filter_shape(3, 3, 5);
-    shape3d_t input_shape(5, 5, 5);
+    shape3d_t input_shape(15, 15, 5);
     int filters_number = 10;
     int stride_length = 1;
     auto input = create_input(input_shape);
@@ -204,27 +205,24 @@ void prepare_layers_for_comparison(conv_loop_ptr &loop,
                 filter_shape,
                 filters_number,
                 stride_length,
-                padding_type::same,
+                padding,
                 relu_activator);
     loop->load(create_filters(filters_number, filter_shape),
-              create_biases(filters_number));
-    auto error = create_error(loop->get_output_shape());
+               create_biases(filters_number));
     loop->init();
     loop->feedforward(input);
-    loop->backpropagate(error);
 
     matrix = std::make_shared<convolution_layer_2d_t<float>>(
                 input_shape,
                 filter_shape,
                 filters_number,
                 stride_length,
-                padding_type::same,
+                padding,
                 relu_activator);
     matrix->load(create_filters(filters_number, filter_shape),
-              create_biases(filters_number));
+                 create_biases(filters_number));
     matrix->init();
     matrix->feedforward(input);
-    matrix->backpropagate(error);
 }
 
 TEST (ConvolutionTests, NablaWeightBackpropagateWithSamePaddingTest) {
@@ -232,12 +230,16 @@ TEST (ConvolutionTests, NablaWeightBackpropagateWithSamePaddingTest) {
 
     conv_loop_ptr loop;
     conv_matrix_ptr matrix;
-    prepare_layers_for_comparison(loop, matrix);
+    prepare_layers_for_comparison(loop, matrix, padding_type::same);
+
+    auto error = create_error(loop->get_output_shape());
 
     fake_optimizer_t matrix_optimizer;
+    matrix->backpropagate(error);
     matrix->optimize(matrix_optimizer);
 
     fake_optimizer_t loop_optimizer;
+    loop->backpropagate(error);
     loop->optimize(loop_optimizer);
 
     auto &loop_nabla_w = loop_optimizer.get_nabla_w();
@@ -256,12 +258,16 @@ TEST (ConvolutionTests, NablaBiasBackpropagateWithSamePaddingTest) {
 
     conv_loop_ptr loop;
     conv_matrix_ptr matrix;
-    prepare_layers_for_comparison(loop, matrix);
+    prepare_layers_for_comparison(loop, matrix, padding_type::same);
+
+    auto error = create_error(loop->get_output_shape());
 
     fake_optimizer_t matrix_optimizer;
+    matrix->backpropagate(error);
     matrix->optimize(matrix_optimizer);
 
     fake_optimizer_t loop_optimizer;
+    loop->backpropagate(error);
     loop->optimize(loop_optimizer);
 
     auto &loop_nabla_b = loop_optimizer.get_nabla_b();
@@ -275,43 +281,86 @@ TEST (ConvolutionTests, NablaBiasBackpropagateWithSamePaddingTest) {
     }
 }
 
-TEST (ConvolutionTests, LoopBackpropagateWith2DSamePaddingTest) {
+TEST (ConvolutionTests, NablaWeightBackpropagateWithValidPaddingTest) {
     using namespace yannpp;
 
-    shape3d_t filter_shape(3, 3, 5);
-    shape3d_t input_shape(5, 5, 5);
-    int filters_number = 10;
-    int stride_length = 1;
+    conv_loop_ptr loop;
+    conv_matrix_ptr matrix;
+    prepare_layers_for_comparison(loop, matrix, padding_type::valid);
 
-    auto input = create_input(input_shape);
+    auto error = create_error(loop->get_output_shape());
 
-    convolution_layer_loop_t<float> loop(
-                input_shape,
-                filter_shape,
-                filters_number,
-                stride_length,
-                padding_type::valid,
-                relu_activator);
-    loop.load(create_filters(filters_number, filter_shape),
-              create_biases(filters_number));
-    loop.init();
-    loop.feedforward(input);
+    fake_optimizer_t matrix_optimizer;
+    matrix->backpropagate(error);
+    matrix->optimize(matrix_optimizer);
 
-    convolution_layer_2d_t<float> matrix(
-                input_shape,
-                filter_shape,
-                filters_number,
-                stride_length,
-                padding_type::valid,
-                relu_activator);
-    matrix.load(create_filters(filters_number, filter_shape),
-                create_biases(filters_number));
-    matrix.init();
-    matrix.feedforward(input);
+    fake_optimizer_t loop_optimizer;
+    loop->backpropagate(error);
+    loop->optimize(loop_optimizer);
 
-    ASSERT_TRUE(loop.get_output_shape() == matrix.get_output_shape());
+    auto &loop_nabla_w = loop_optimizer.get_nabla_w();
+    auto &matrix_nabla_w = matrix_optimizer.get_nabla_w();
 
-    auto error = create_error(loop.get_output_shape());
-    ASSERT_TRUE(arrays_equal(loop.backpropagate(error),
-                             matrix.backpropagate(error)));
+    ASSERT_EQ(loop_nabla_w.size(), matrix_nabla_w.size());
+    ASSERT_GT(loop_nabla_w.size(), 0);
+
+    for (size_t i = 0; i < loop_nabla_w.size(); i++) {
+        ASSERT_TRUE(arrays_equal(loop_nabla_w[i], matrix_nabla_w[i])) << "Arrays are not equal at " << i;
+    }
+}
+
+TEST (ConvolutionTests, NablaBiasBackpropagateWithValidPaddingTest) {
+    using namespace yannpp;
+
+    conv_loop_ptr loop;
+    conv_matrix_ptr matrix;
+    prepare_layers_for_comparison(loop, matrix, padding_type::valid);
+
+    auto error = create_error(loop->get_output_shape());
+
+    fake_optimizer_t matrix_optimizer;
+    matrix->backpropagate(error);
+    matrix->optimize(matrix_optimizer);
+
+    fake_optimizer_t loop_optimizer;
+    loop->backpropagate(error);
+    loop->optimize(loop_optimizer);
+
+    auto &loop_nabla_b = loop_optimizer.get_nabla_b();
+    auto &matrix_nabla_b = matrix_optimizer.get_nabla_b();
+
+    ASSERT_EQ(loop_nabla_b.size(), matrix_nabla_b.size());
+    ASSERT_GT(loop_nabla_b.size(), 0);
+
+    for (size_t i = 0; i < loop_nabla_b.size(); i++) {
+        ASSERT_TRUE(arrays_equal(loop_nabla_b[i], matrix_nabla_b[i])) << "Arrays are not equal at " << i;
+    }
+}
+
+TEST (ConvolutionTests, BackpropagateWithSamePaddingTest) {
+    using namespace yannpp;
+
+    conv_loop_ptr loop;
+    conv_matrix_ptr matrix;
+    prepare_layers_for_comparison(loop, matrix, padding_type::same);
+
+    ASSERT_TRUE(loop->get_output_shape() == matrix->get_output_shape());
+
+    auto error = create_error(loop->get_output_shape());
+    ASSERT_TRUE(arrays_equal(loop->backpropagate(error),
+                             matrix->backpropagate(error)));
+}
+
+TEST (ConvolutionTests, BackpropagateWithValidPaddingTest) {
+    using namespace yannpp;
+
+    conv_loop_ptr loop;
+    conv_matrix_ptr matrix;
+    prepare_layers_for_comparison(loop, matrix, padding_type::valid);
+
+    ASSERT_TRUE(loop->get_output_shape() == matrix->get_output_shape());
+
+    auto error = create_error(loop->get_output_shape());
+    ASSERT_TRUE(arrays_equal(loop->backpropagate(error),
+                             matrix->backpropagate(error)));
 }

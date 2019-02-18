@@ -21,6 +21,13 @@
 #define STRINGIZE_(x) #x
 #define STRINGIZE(x) STRINGIZE_(x)
 
+static yannpp::activator_t<float> sigmoid_activator(yannpp::sigmoid_v<float>, yannpp::sigmoid_derivative_v<float>);
+// derivative returns 1 because it is cancelled out when using cross-entropy
+static yannpp::activator_t<float> softmax_activator(yannpp::stable_softmax_v<float>,
+                                     [](yannpp::array3d_t<float> const &x){
+    return yannpp::array3d_t<float>(yannpp::shape_row(x.size()), 1.0);});
+static yannpp::activator_t<float> relu_activator(yannpp::relu_v<float>, yannpp::relu_v<float>);
+
 class MnistTests: public ::testing::Test
 {
 protected:
@@ -44,11 +51,8 @@ TEST_F (MnistTests, LearnMnistDenseTest) {
     float learning_rate = 0.01f;
     float decay_rate = 20.f;
 
-    activator_t<float> sigmoid_activator(sigmoid_v<float>, sigmoid_derivative_v<float>);
-    // derivative returns 1 because it is cancelled out when using cross-entropy
-    activator_t<float> softmax_activator(stable_softmax_v<float>,
-                                          [](array3d_t<float> const &x){
-        return array3d_t<float>(shape_row(x.size()), 1.0);});
+    // reduce size for testing
+    training_data_.resize(training_data_.size()/10);
 
     sdg_optimizer_t<float> sdg_optimizer(mini_batch_size,
                                          training_data_.size(),
@@ -74,32 +78,12 @@ TEST_F (MnistTests, LearnMnistDenseTest) {
     std::iota(eval_indices.begin(), eval_indices.end(), 5*training_data_.size() / 6);
     auto result = network.evaluate(training_data_, eval_indices);
 
-    ASSERT_GT(result, 9300);
+    ASSERT_GT(result, 800);
 }
 
-TEST_F (MnistTests, DeepLearningMnistTest) {
+std::vector<yannpp::network2_t<float>::layer_type> create_dl_layers() {
     using namespace yannpp;
-
-    size_t mini_batch_size = 40;
-    float learning_rate = 0.001;
-    float decay_rate = 10.0;
-
-    // reduce size for testing
-    training_data_.resize(training_data_.size()/10);
-
-    activator_t<float> sigmoid_activator(sigmoid_v<float>, sigmoid_derivative_v<float>);
-    // derivative returns 1 because it is cancelled out when using cross-entropy
-    activator_t<float> softmax_activator(stable_softmax_v<float>,
-                                          [](array3d_t<float> const &x){
-        return array3d_t<float>(shape_row(x.size()), 1.0);});
-    activator_t<float> relu_activator(relu_v<float>, relu_v<float>);
-    sdg_optimizer_t<float> sdg_optimizer(mini_batch_size,
-                                        training_data_.size(),
-                                        decay_rate,
-                                        learning_rate);
-
-    network2_t<float> network(
-                std::initializer_list<network2_t<float>::layer_type>(
+    std::vector<network2_t<float>::layer_type> layers = std::initializer_list<network2_t<float>::layer_type>(
     {
                         std::make_shared<convolution_layer_loop_t<float>>(
                         shape3d_t(28, 28, 1), // input size
@@ -112,18 +96,52 @@ TEST_F (MnistTests, DeepLearningMnistTest) {
                         2, // window_size
                         2), // stride length
                         /*std::make_shared<convolution_layer_loop_t<float>>(
-                        shape3d_t(12, 12, 20), // input size
-                        shape3d_t(5, 5, 20), // filter size
-                        20,
-                        1, // stride length
-                        padding_type::valid,
-                        relu_activator),
-                        std::make_shared<pooling_layer_t<float>>(
-                        2, // window_size
-                        2), // stride length*/
+                          shape3d_t(12, 12, 20), // input size
+                          shape3d_t(5, 5, 20), // filter size
+                          20,
+                          1, // stride length
+                          padding_type::valid,
+                          relu_activator),
+                          std::make_shared<pooling_layer_t<float>>(
+                          2, // window_size
+                          2), // stride length*/
                         std::make_shared<fully_connected_layer_t<float>>(10*12*12, 30, relu_activator),
                         std::make_shared<fully_connected_layer_t<float>>(30, 10, softmax_activator),
-                        std::make_shared<crossentropy_output_layer_t<float>>()}));
+                        std::make_shared<crossentropy_output_layer_t<float>>()});
+    return layers;
+}
+
+static yannpp::array3d_t<float> filter_initializer(yannpp::shape3d_t(5, 5, 1), 0.f, 1.f/5.f);
+static yannpp::array3d_t<float> bias_initializer(yannpp::shape3d_t(1, 1, 1), 0.f);
+
+void init_layers(std::vector<yannpp::network2_t<float>::layer_type> &layers) {
+    using namespace yannpp;
+    std::vector<array3d_t<float>> filters, biases;
+    for (int i = 0; i < 10; i++) {
+        filters.push_back(filter_initializer);
+        biases.push_back(bias_initializer);
+    }
+    layers[0]->load(std::move(filters), std::move(biases));
+}
+
+TEST_F (MnistTests, DeepLearningLoopMnistTest) {
+    using namespace yannpp;
+
+    size_t mini_batch_size = 40;
+    float learning_rate = 0.001;
+    float decay_rate = 10.0;
+
+    // reduce size for testing
+    training_data_.resize(training_data_.size()/30);
+
+    sdg_optimizer_t<float> sdg_optimizer(mini_batch_size,
+                                         training_data_.size(),
+                                         decay_rate,
+                                         learning_rate);
+
+    auto layers = create_dl_layers();
+    init_layers(layers);
+    network2_t<float> network(std::move(layers));
 
     size_t epochs = 1;
 
@@ -133,10 +151,56 @@ TEST_F (MnistTests, DeepLearningMnistTest) {
                   epochs,
                   mini_batch_size);
 
-    std::vector<size_t> eval_indices(training_data_.size() / 6);
+    const size_t training_size = 5 * training_data_.size() / 6;
+    std::vector<size_t> eval_indices(training_data_.size() - training_size);
     // generate indices from 1 to the number of inputs
-    std::iota(eval_indices.begin(), eval_indices.end(), 5*training_data_.size() / 6);
+    std::iota(eval_indices.begin(), eval_indices.end(), training_size);
     auto result = network.evaluate(training_data_, eval_indices);
 
-    ASSERT_GT(result, 700);
+    ASSERT_GT(result, eval_indices.size()/2);
+}
+
+TEST_F (MnistTests, DeepLearning2DMnistTest) {
+    using namespace yannpp;
+
+    size_t mini_batch_size = 40;
+    float learning_rate = 0.001;
+    float decay_rate = 10.0;
+
+    // reduce size for testing
+    training_data_.resize(training_data_.size()/30);
+
+
+    sdg_optimizer_t<float> sdg_optimizer(mini_batch_size,
+                                         training_data_.size(),
+                                         decay_rate,
+                                         learning_rate);
+
+    auto layers = create_dl_layers();
+    // replace loop convolution to 2D
+    layers[0] = std::make_shared<convolution_layer_2d_t<float>>(
+                                                                   shape3d_t(28, 28, 1), // input size
+                                                                   shape3d_t(5, 5, 1), // filter size
+                                                                   10, // filters count
+                                                                   1, // stride length
+                                                                   padding_type::valid,
+                                                                   relu_activator);
+    init_layers(layers);
+    network2_t<float> network(std::move(layers));
+
+    size_t epochs = 1;
+
+    network.init_layers();
+    network.train(training_data_,
+                  sdg_optimizer,
+                  epochs,
+                  mini_batch_size);
+
+    const size_t training_size = 5 * training_data_.size() / 6;
+    std::vector<size_t> eval_indices(training_data_.size() - training_size);
+    // generate indices from 1 to the number of inputs
+    std::iota(eval_indices.begin(), eval_indices.end(), training_size);
+    auto result = network.evaluate(training_data_, eval_indices);
+
+    ASSERT_GT(result, eval_indices.size()/2);
 }

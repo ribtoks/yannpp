@@ -74,7 +74,7 @@ namespace yannpp {
                     filter_weights_.emplace_back(
                                 filter_shape_,
                                 T(0), T(1)/sqrt((T)filter_shape_.capacity()));
-                    filter_biases_.emplace_back(shape_row(1), 0);
+                    filter_biases_.emplace_back(shape_row(1), T(0));
                 }
             }
 
@@ -90,8 +90,8 @@ namespace yannpp {
         }
 
         virtual void optimize(optimizer_t<T> const &strategy) override {
-            const size_t size = filter_weights_.size();
-            for (size_t i = 0; i < size; i++) {
+            const size_t filters_size = filter_weights_.size();
+            for (size_t i = 0; i < filters_size; i++) {
                 strategy.update_weights(filter_weights_[i], nabla_weights_[i]);
                 strategy.update_bias(filter_biases_[i], nabla_biases_[i]);
                 nabla_weights_[i].reset(0);
@@ -296,26 +296,25 @@ namespace yannpp {
         virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
             assert(input.shape() == this->input_shape_);
             this->input_ = input.clone();
+            // Extracts image patches from the input to form a
+            //  [out_height * out_width, filter_height * filter_width * in_channels]
             this->input_patches_ = input_patches();
-            this->flat_filters_ = flat_filters();
-            /*
-             * Flattens the filter to a 2-D matrix with shape
-             *   [filter_height * filter_width * in_channels, output_channels].
-             * Extracts image patches from the input to form a
-             *   [out_height * out_width, filter_height * filter_width * in_channels].
-             * For each patch, right-multiplies the filter matrix and the image patch vector.
-             */
             auto &patches = this->input_patches_;
-            auto &filters = this->flat_filters_;
+            // flattens filters to 2d matrix of size [filters_number, filter_height * filter_width * in_channels]
+            auto filters = flat_filters();
+            // convert biases to 1 array of size [filters_number]
             auto biases = flat_biases();
 
             const shape3d_t output_shape = this->get_output_shape();
             std::vector<T> result;
             result.reserve(output_shape.capacity());
 
-            const size_t psize = patches.size();
-            for (size_t i = 0; i < psize; i++) {
+            // number of patches is [out_height * out_width]
+            const size_t patches_size = patches.size();
+            for (size_t i = 0; i < patches_size; i++) {
+                // result has size of [filters_number]
                 auto conv = dot21(filters, patches[i]);
+                assert(conv.shape() == shape3d_t(output_shape.z(), 1, 1));
                 conv.add(biases);
                 result.insert(result.end(), conv.data().begin(), conv.data().end());
             }
@@ -337,22 +336,22 @@ namespace yannpp {
              * so if we convolve them with deltas of size [filters_count, out_width * out_height]
              * result will be of [filter_width * filter_height * filter_channels, filters_count]
              */
-            auto ipatches = input_patches_transpose();
+            auto input_patches = input_patches_transpose();
             // reshape [out_height, out_width, filters_count] errors into
             // [filters_count, output_height * output_width] array
             auto deltas = reshape_deltas(delta);
 
-            const size_t dsize = deltas.size();
-            assert(dsize == this->nabla_weights_.size());
-            const size_t psize = ipatches.size();
+            const size_t deltas_size = deltas.size();
+            assert(deltas_size == this->nabla_weights_.size());
+            const size_t patches_size = input_patches.size();
             // this is a workaround for the fact that array3d cannot be used
             // for dot product of 4d arrays
             // so do dot products of each row separately
-            for (size_t d = 0; d < dsize; d++) {
+            for (size_t d = 0; d < deltas_size; d++) {
                 std::vector<T> nabla_w;
                 nabla_w.reserve(this->filter_shape_.capacity());
-                for (size_t p = 0; p < psize; p++) {
-                    nabla_w.push_back(inner_product(deltas[d], ipatches[p]));
+                for (size_t p = 0; p < patches_size; p++) {
+                    nabla_w.push_back(inner_product(deltas[d], input_patches[p]));
                 }
                 this->nabla_weights_[d] = array3d_t<T>(this->filter_shape_, std::move(nabla_w));
                 this->nabla_biases_[d](0) = deltas[d].sum();
@@ -368,25 +367,29 @@ namespace yannpp {
             // extract patches for convolution from each layer of deltas (# of layers == # of filters)
             // returns array [filters_count, input_width * input_height, filter_width * filter_height] of deltas
             auto dpatches = delta_patches(delta);
-            for (size_t d = 0; d < dsize; d++) {
+            shape3d_t filter_slice_shape(this->filter_shape_.x()*this->filter_shape_.y(), 1, 1);
+            for (size_t d = 0; d < deltas_size; d++) {
+                // delta patch has size [input_width * input_height, filter_width * filter_height]
                 auto &delta_patch = dpatches[d];
 
+                // each output layer was created using full input (*) filter
+                // so each delta (output error) layer will influence errors of whole input as well
                 for (size_t z = 0; z < this->input_shape_.z(); z++) {
                     auto filter_z = this->filter_weights_[d].extract(
                                         index3d_t(0, 0, z),
                                         index3d_t(this->filter_shape_.x() - 1,
                                                   this->filter_shape_.y() - 1,
                                                   z));
-                    // result of size [input_width * input_height]
-                    auto delta_i = dot21(delta_patch,
-                                         array3d_t<T>(
-                                             shape3d_t(this->filter_shape_.x()*this->filter_shape_.y(), 1, 1),
-                                             std::move(filter_z)));
-                    delta_input_channel[z].add(delta_i);
+                    // result of size [input_width * input_height] - errors scaled by weights
+                    auto delta_z = dot21(delta_patch,
+                                         array3d_t<T>(filter_slice_shape, std::move(filter_z)));
+                    delta_input_channel[z].add(delta_z);
                 }
             }
 
             array3d_t<T> delta_next(this->input_shape_, T(0));
+            // just transpose errors of size [channels, input_height * input_width]
+            // to proper 3d array [input_height, input_width, channels]
             for (size_t x = 0; x < this->input_shape_.x(); x++) {
                 for (size_t y = 0; y < this->input_shape_.y(); y++) {
                     for (size_t z = 0; z < this->input_shape_.z(); z++) {
@@ -530,7 +533,6 @@ namespace yannpp {
 
     private:
         std::deque<array3d_t<T>> input_patches_;
-        array3d_t<T> flat_filters_;
     };
 }
 

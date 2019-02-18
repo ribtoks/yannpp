@@ -1,3 +1,4 @@
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -98,6 +99,25 @@ std::vector<array3d_t<float>> create_filters(int count, shape3d_t const &shape) 
 
 int main(int argc, char* argv[]) {
     using namespace yannpp;
+
+    array3d_t<float> rgb(shape3d_t(5, 5, 3), 0.f);
+    for (int x = 0; x < 5; x++) {
+        for (int y = 0; y < 5; y++) {
+            for (int z = 0; z < 3; z++) {
+                rgb(x, y, z) = z;
+            }
+        }
+    }
+
+    for (int i = 0; i < 5*5*3; i++) {
+        std::cout << rgb.data()[i] << " ";
+    }
+    std::cout << std::endl;
+
+    log(rgb);
+    //return 0;
+
+    log("-----------------------------");
 
     // 29730.
     log(conv2d(create_filters(1, shape3d_t(3,3,5)),

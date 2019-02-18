@@ -25,6 +25,17 @@ namespace yannpp {
     };
 
     template<typename T>
+    array3d_t<T> unvectorize(std::vector<array3d_t<T>> const &vectorized) {
+        const size_t size = vectorized.size();
+        std::vector<T> result;
+        result.reserve(size);
+        for (size_t i = 0; i < size; i++) {
+            result.insert(result.end(), vectorized[i].data().begin(), vectorized[i].data().end());
+        }
+        return array3d_t<T>(shape3d_t(result.size(), 1, 1), std::move(result));
+    }
+
+    template<typename T>
     class convolution_layer_base_t: public layer_base_t<T> {
     public:
         convolution_layer_base_t(shape3d_t const &input_shape,
@@ -72,8 +83,8 @@ namespace yannpp {
                 nabla_biases_.reserve(filters_number);
 
                 for (int i = 0; i < filters_number; i++) {
-                    nabla_weights_.emplace_back(filter_shape_, 0);
-                    nabla_biases_.emplace_back(shape_row(1), 0);
+                    nabla_weights_.emplace_back(filter_shape_, T(0));
+                    nabla_biases_.emplace_back(shape_row(1), T(0));
                 }
             }
         }
@@ -102,15 +113,15 @@ namespace yannpp {
             filter_biases_ = std::move(biases);
         }
 
-    protected:
         shape3d_t get_output_shape() const {
             if (padding_ == padding_type::valid) { return conv_shape_; }
 
             double width = ceil(double(input_shape_.x()) / double(stride_.x()));
             double height = ceil(double(input_shape_.y()) / double(stride_.y()));
-            return shape3d_t((int)width, (int)height, filter_weights_.size());
+            return shape3d_t((int)width, (int)height, /*filters_number*/conv_shape_.z());
         }
 
+    protected:
         int get_top_padding() const {
             if (padding_ == padding_type::valid) { return 0; }
             return utils::get_top_padding(input_shape_, filter_shape_, stride_.y());
@@ -194,7 +205,7 @@ namespace yannpp {
             // error shape was already transformed in the prev layer as delta(l+1)(*)rot180(w(l+1))
             assert(error.shape() == this->output_.shape());
             auto &error_shape = error.shape();
-            // gradietns with regards to input of this layer
+            // gradients with regards to input of this layer
             array3d_t<T> delta;
             delta = this->activator_.derivative(this->output_); delta.element_mul(error);
 
@@ -209,6 +220,8 @@ namespace yannpp {
                 auto &nabla_w = this->nabla_weights_[fi];
                 auto &nabla_b = this->nabla_biases_[fi](0);
                 auto delta_fi = delta.slice(dim_type::Z, fi, fi);
+                // dC/db = delta(l)
+                nabla_b += delta_fi.sum();
 
                 for (int z = 0; z < input_shape.z(); z++) {
                     // convolution of input and filter gives us output (same as error size)
@@ -219,8 +232,6 @@ namespace yannpp {
                         for (int x = 0; x < filter_shape.x(); x++) {
                             int xs = x * stride.x() - pad_x;
 
-                            // dC/db = delta(l)
-                            nabla_b += delta(x, y, fi);
                             // dC/dw = a(l-1) (x) delta(l)
                             nabla_w(x, y, z) +=
                                     dot<T>(
@@ -246,24 +257,26 @@ namespace yannpp {
             // gradient for the next layer is delta(l) (*) rot180(w(l))
             // so for delta we apply "full" convolution with filter
             for (size_t fi = 0; fi < fsize; fi++) {
+                // each output layer was created using full input (*) filter
+                // so each delta (output error) layer will influence errors of whole input as well
                 for (int z = 0; z < input_shape.z(); z++) {
-                    auto weights = this->filter_weights_[fi].slice(dim_type::Z, z, z);
+                    auto filter = this->filter_weights_[fi].slice(dim_type::Z, z, z);
 
-                    // result of the convolution of delta and weights will be input size
+                    // result of the convolution of delta and filter will be input size
                     for (int y = 0; y < input_shape.y(); y++) {
                         int ys = y*stride.y() - weight_pad_y;
 
                         for (int x = 0; x < input_shape.x(); x++) {
                             int xs = x*stride.x() - weight_pad_x;
 
-                            delta_next(x, y, z) =
+                            delta_next(x, y, z) +=
                                     dot<T>(
                                         delta.slice(
                                             index3d_t(xs, ys, fi),
                                             index3d_t(xs + filter_shape.x() - 1,
                                                       ys + filter_shape.y() - 1,
                                                       fi)),
-                                        weights);
+                                        filter);
                         }
                     }
                 }
@@ -283,15 +296,17 @@ namespace yannpp {
         virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
             assert(input.shape() == this->input_shape_);
             this->input_ = input.clone();
+            this->input_patches_ = input_patches();
+            this->flat_filters_ = flat_filters();
             /*
              * Flattens the filter to a 2-D matrix with shape
              *   [filter_height * filter_width * in_channels, output_channels].
              * Extracts image patches from the input to form a
-             *   [batch, out_height, out_width, filter_height * filter_width * in_channels].
+             *   [out_height * out_width, filter_height * filter_width * in_channels].
              * For each patch, right-multiplies the filter matrix and the image patch vector.
              */
-            auto patches = image_patches();
-            auto filters = flat_filters();
+            auto &patches = this->input_patches_;
+            auto &filters = this->flat_filters_;
             auto biases = flat_biases();
 
             const shape3d_t output_shape = this->get_output_shape();
@@ -310,8 +325,77 @@ namespace yannpp {
         }
 
         virtual array3d_t<T> backpropagate(array3d_t<T> const &error) override {
-            // TODO: implement this
-            return error;
+            // error shape was already transformed in the prev layer as delta(l+1)(*)rot180(w(l+1))
+            assert(error.shape() == this->output_.shape());
+            // gradients with regards to input of this layer
+            array3d_t<T> delta;
+            delta = this->activator_.derivative(this->output_); delta.element_mul(error);
+
+            /*
+             * transposed input patches are of size
+             * [filter_height * filter_width * filter_channels, out_width * out_height]
+             * so if we convolve them with deltas of size [filters_count, out_width * out_height]
+             * result will be of [filter_width * filter_height * filter_channels, filters_count]
+             */
+            auto ipatches = input_patches_transpose();
+            // reshape [out_height, out_width, filters_count] errors into
+            // [filters_count, output_height * output_width] array
+            auto deltas = reshape_deltas(delta);
+
+            const size_t dsize = deltas.size();
+            assert(dsize == this->nabla_weights_.size());
+            const size_t psize = ipatches.size();
+            // this is a workaround for the fact that array3d cannot be used
+            // for dot product of 4d arrays
+            // so do dot products of each row separately
+            for (size_t d = 0; d < dsize; d++) {
+                std::vector<T> nabla_w;
+                nabla_w.reserve(this->filter_shape_.capacity());
+                for (size_t p = 0; p < psize; p++) {
+                    nabla_w.push_back(inner_product(deltas[d], ipatches[p]));
+                }
+                this->nabla_weights_[d] = array3d_t<T>(this->filter_shape_, std::move(nabla_w));
+                this->nabla_biases_[d](0) = deltas[d].sum();
+            }
+
+            // precreate placeholders for sum
+            std::vector<array3d_t<T>> delta_input_channel;
+            for (size_t z = 0; z < this->input_shape_.z(); z++) {
+                delta_input_channel.emplace_back(
+                            array3d_t<T>(
+                                shape3d_t(this->input_shape_.x() * this->input_shape_.y(), 1, 1), T(0)));
+            }
+            // extract patches for convolution from each layer of deltas (# of layers == # of filters)
+            // returns array [filters_count, input_width * input_height, filter_width * filter_height] of deltas
+            auto dpatches = delta_patches(delta);
+            for (size_t d = 0; d < dsize; d++) {
+                auto &delta_patch = dpatches[d];
+
+                for (size_t z = 0; z < this->input_shape_.z(); z++) {
+                    auto filter_z = this->filter_weights_[d].extract(
+                                        index3d_t(0, 0, z),
+                                        index3d_t(this->filter_shape_.x() - 1,
+                                                  this->filter_shape_.y() - 1,
+                                                  z));
+                    // result of size [input_width * input_height]
+                    auto delta_i = dot21(delta_patch,
+                                         array3d_t<T>(
+                                             shape3d_t(this->filter_shape_.x()*this->filter_shape_.y(), 1, 1),
+                                             std::move(filter_z)));
+                    delta_input_channel[z].add(delta_i);
+                }
+            }
+
+            array3d_t<T> delta_next(this->input_shape_, T(0));
+            for (size_t x = 0; x < this->input_shape_.x(); x++) {
+                for (size_t y = 0; y < this->input_shape_.y(); y++) {
+                    for (size_t z = 0; z < this->input_shape_.z(); z++) {
+                        delta_next(y, x, z) = delta_input_channel[z](x*this->input_shape_.y() + y);
+                    }
+                }
+            }
+
+            return delta_next;
         }
 
     private:
@@ -327,7 +411,7 @@ namespace yannpp {
             return array3d_t<T>(shape3d_t(fsize, flength, 1), std::move(filters_matrix));
         }
 
-        std::deque<array3d_t<T>> image_patches() {
+        std::deque<array3d_t<T>> input_patches() {
             std::deque<array3d_t<T>> patches;
             const shape3d_t output_shape = this->get_output_shape();
             auto &filter_shape = this->filter_shape_;
@@ -344,27 +428,113 @@ namespace yannpp {
                     patches.emplace_back(
                                 shape3d_t(filter_shape.capacity(), 1, 1),
                                 std::move(
-                                    this->input_.slice(
+                                    this->input_.extract(
                                         index3d_t(xs, ys, 0),
                                         index3d_t(xs + filter_shape.x() - 1,
                                                   ys + filter_shape.y() - 1,
-                                                  this->input_shape_.z() - 1))
-                                    .extract()));
+                                                  this->input_shape_.z() - 1))));
                 }
             }
 
             return patches;
         }
 
-        array3d_t<T> flat_biases() {
-            const size_t size = this->filter_biases_.size();
-            std::vector<T> biases;
-            biases.reserve(size);
-            for (size_t i = 0; i < size; i++) {
-                biases.push_back(this->filter_biases_[i](0));
+        std::vector<array3d_t<T>> input_patches_transpose() {
+            assert(!this->input_patches_.empty());
+            std::vector<array3d_t<T>> patches;
+
+            // flat size == filter_height * filter_width * in_channels
+            const int filter_flat_size = this->filter_shape_.capacity();
+            // patch size is equal to [out_width * out_height]
+            const size_t patches_size = this->input_patches_.size();
+            for (size_t i = 0; i < filter_flat_size; i++) {
+                patches.emplace_back(shape3d_t(patches_size, 1, 1), T(0));
             }
-            return array3d_t<T>(shape3d_t(size, 1, 1), std::move(biases));
+
+            // input patches are of size
+            // [out_height * out_width, filter_height * filter_width * in_channels]
+            for (size_t i = 0; i < patches_size; i++) {
+                auto &slice = this->input_patches_[i].data();
+                assert(slice.size() == filter_flat_size);
+                for (size_t j = 0; j < filter_flat_size; j++) {
+                    patches[j](i) = slice[j];
+                }
+            }
+
+            // this->input_patches_.clear();
+
+            return patches;
         }
+
+        std::vector<array3d_t<T>> delta_patches(array3d_t<T> const &delta) {
+            std::vector<array3d_t<T>> result;
+            auto &delta_shape = delta.shape();
+            auto &input_shape = this->input_shape_;
+
+            const int weight_pad_x = utils::get_left_padding(delta_shape, this->filter_shape_, this->stride_.x());
+            const int weight_pad_y = utils::get_top_padding(delta_shape, this->filter_shape_, this->stride_.y());
+
+            const size_t filters_count = delta_shape.z();
+            result.reserve(filters_count);
+            for (size_t di = 0; di < filters_count; di++) {
+                std::vector<T> patches;
+                patches.reserve(this->filter_shape_.capacity() * input_shape.x() * input_shape.y());
+                // result of the convolution of delta and filter will be input size
+                for (int y = 0; y < input_shape.y(); y++) {
+                    int ys = y*this->stride_.y() - weight_pad_y;
+
+                    for (int x = 0; x < input_shape.x(); x++) {
+                        int xs = x*this->stride_.x() - weight_pad_x;
+
+                        auto slice = delta.extract(
+                                         index3d_t(xs, ys, di),
+                                         index3d_t(xs + this->filter_shape_.x() - 1,
+                                                   ys + this->filter_shape_.y() - 1,
+                                                   di));
+
+                        patches.insert(patches.end(), slice.begin(), slice.end());
+                    }
+                }
+                result.emplace_back(
+                            shape3d_t(input_shape.x() * input_shape.y(),
+                                      this->filter_shape_.x() * this->filter_shape_.y(),
+                                      1),
+                            std::move(patches));
+            }
+
+            return result;
+        }
+
+        array3d_t<T> flat_biases() { return unvectorize(this->filter_biases_); }
+        array3d_t<T> flat_nabla_b() { return unvectorize(this->nabla_biases_); }
+
+        std::vector<array3d_t<T>> reshape_deltas(array3d_t<T> const &delta) {
+            std::vector<array3d_t<T>> deltas;
+            auto &delta_shape = delta.shape();
+            deltas.reserve(delta_shape.z());
+
+            const int delta_WxH = delta_shape.x() * delta_shape.y();
+            const int zn = delta.shape().z();
+
+            for (int z = 0; z < zn; z++) {
+                deltas.emplace_back(shape3d_t(delta_WxH, 1, 1),
+                                    delta.extract(
+                                        index3d_t(0, 0, z),
+                                        index3d_t(delta_shape.x() - 1,
+                                                  delta_shape.y() - 1,
+                                                  z)));
+            }
+
+            return deltas;
+        }
+
+        std::vector<array3d_t<T>> reshape_filters() {
+
+        }
+
+    private:
+        std::deque<array3d_t<T>> input_patches_;
+        array3d_t<T> flat_filters_;
     };
 }
 

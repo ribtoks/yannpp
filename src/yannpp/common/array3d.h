@@ -67,18 +67,16 @@ namespace yannpp {
                 return imax;
             }
 
-            std::vector<T> extract() {
+            T sum() const {
                 index3d_iterator it = iterator();
-                std::vector<T> data;
-                data.reserve(shape_.capacity());
-                for (; it.is_valid(); ++it) {
-                    T v = 0;
+                T sum = T(0);
+                for (size_t i = 0; it.is_valid(); ++it, ++i) {
                     if (in_bounds(*it)) {
-                        v = at(*it);
+                        T v = at(*it);
+                        sum += v;
                     }
-                    data.push_back(v);
                 }
-                return data;
+                return sum;
             }
 
         private:
@@ -176,16 +174,31 @@ namespace yannpp {
                          iend.set(d, end));
         }
 
+        std::vector<T> extract(index3d_t const &start,
+                               index3d_t const &end) const {
+            index3d_iterator it(start, end);
+            std::vector<T> data;
+            data.reserve(it.steps_count());
+            for (; it.is_valid(); ++it) {
+                T v = 0;
+                if (in_bounds(*it)) {
+                    v = at(*it);
+                }
+                data.push_back(v);
+            }
+            return data;
+        }
+
         array3d_t<T> clone() const {
             return array3d_t(*this);
         }
 
-        array3d_t<T> flatten() const {
-            return array3d_t(shape_row((int)size()), v_);
+        void flatten() {
+            reshape(shape_row((int)size()));
         }
 
     private:
-        inline bool in_bounds(index3d_t const &i) {
+        inline bool in_bounds(index3d_t const &i) const {
             return ((0 <= i.x()) && (i.x() < shape_.x())) &&
                     ((0 <= i.y()) && (i.y() < shape_.y())) &&
                     ((0 <= i.z()) && (i.z() < shape_.z()));
@@ -196,9 +209,11 @@ namespace yannpp {
         inline shape3d_t const &shape() const { return shape_; }
         inline size_t size() const { return v_.size(); }
         inline T &at(int x, int y, int z) { return v_.at(shape_.index(x, y, z)); }
+        inline T &at(index3d_t const &index) { return at(index.x(), index.y(), index.z()); }
         inline T &operator()(int x, int y, int z) { return at(x, y, z); }
         inline T &operator()(int x, int y) { return at(x, y, 0); }
         inline T &operator()(int x) { return at(x, 0, 0); }
+        inline T const &at(index3d_t const &index) const { return at(index.x(), index.y(), index.z()); }
         inline T const &at(int x, int y, int z) const { return v_.at(shape_.index(x, y, z)); }
         inline T const &operator()(int x, int y, int z) const { return at(x, y, z); }
         inline T const &operator()(int x, int y) const { return at(x, y, 0); }
@@ -270,6 +285,7 @@ namespace yannpp {
         }
 
         inline T max() const { return *std::max_element(v_.begin(), v_.end()); }
+        inline T sum() const { return std::accumulate(v_.begin(), v_.end(), T(0)); }
 
         array3d_t<T> flip_xyz() const {
             array3d_t<T> copy(shape_, T(0));

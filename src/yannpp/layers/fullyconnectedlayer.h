@@ -47,7 +47,8 @@ namespace yannpp {
 
         virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
             input_shape_ = input.shape();
-            input_ = input.flatten();
+            input_ = input.clone();
+            input_.flatten();
             // z = w*a + b
             output_ = dot21(weights_, input_); output_.add(bias_);
             return activator_.activate(output_);

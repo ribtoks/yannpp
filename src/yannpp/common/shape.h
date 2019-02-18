@@ -146,6 +146,7 @@ namespace yannpp {
 
     public:
         bool is_valid() const { return moves_ < moves_max_; }
+        size_t steps_count() const { return moves_max_; }
         index3d_iterator& operator++() { move_next(); return *this; }
         index3d_t &operator*() { return current_; }
         index3d_t const &operator*() const { return current_; }
@@ -157,11 +158,12 @@ namespace yannpp {
             auto &idx = current_.data();
             auto &step = step_.data();
             auto &end = end_.data();
+            auto &start = start_.data();
 
             for (size_t j = 3; j --> 0;) {
                 idx[j] += step[j];
                 if (idx[j] <= end[j]) { break; }
-                idx[j] = 0;
+                idx[j] = start[j];
             }
             moves_++;
         }

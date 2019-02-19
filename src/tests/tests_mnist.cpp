@@ -156,7 +156,11 @@ TEST_F (MnistTests, DeepLearningLoopMnistTest) {
     init_layers(layers);
     network2_t<float> network(std::move(layers));
 
+#ifdef _WIN32
+    size_t epochs = 2;
+#else
     size_t epochs = 1;
+#endif
 
     network.init_layers();
     network.train(training_data,
@@ -170,7 +174,7 @@ TEST_F (MnistTests, DeepLearningLoopMnistTest) {
     std::iota(eval_indices.begin(), eval_indices.end(), training_size);
     auto result = network.evaluate(training_data, eval_indices);
 
-    ASSERT_GT(result, 2*eval_indices.size()/3);
+    ASSERT_GT(result, eval_indices.size()/2);
 }
 
 TEST_F (MnistTests, DeepLearning2DMnistTest) {
@@ -201,7 +205,11 @@ TEST_F (MnistTests, DeepLearning2DMnistTest) {
     init_layers(layers);
     network2_t<float> network(std::move(layers));
 
+#ifdef _WIN32
+    size_t epochs = 2;
+#else
     size_t epochs = 1;
+#endif
 
     network.init_layers();
     network.train(training_data,
@@ -215,5 +223,5 @@ TEST_F (MnistTests, DeepLearning2DMnistTest) {
     std::iota(eval_indices.begin(), eval_indices.end(), training_size);
     auto result = network.evaluate(training_data, eval_indices);
 
-    ASSERT_GT(result, 2*eval_indices.size()/3);
+    ASSERT_GT(result, eval_indices.size()/2);
 }

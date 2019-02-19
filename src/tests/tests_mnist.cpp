@@ -156,7 +156,7 @@ TEST_F (MnistTests, DeepLearningLoopMnistTest) {
     init_layers(layers);
     network2_t<float> network(std::move(layers));
 
-    size_t epochs = 1;
+    size_t epochs = 2;
 
     network.init_layers();
     network.train(training_data,

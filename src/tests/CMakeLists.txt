@@ -38,4 +38,4 @@ target_include_directories(yannpp_tests PRIVATE ${GTEST_SOURCE_DIR}/include)
 target_link_libraries(yannpp_tests gtest_main)
 target_link_libraries(yannpp_tests yannpp)
 
-add_test(NAME YannppTest COMMAND yannpp_tests)
+add_test(NAME YannppTests COMMAND yannpp_tests)

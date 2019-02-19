@@ -23,7 +23,7 @@ namespace yannpp {
     public:
         virtual void init() override { }
 
-        virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
+        virtual array3d_t<T> feedforward(array3d_t<T> &&input) override {
             input_shape_ = input.shape();
             // downsample input using window with step stride
             shape3d_t output_shape(POOL_DIM(input_shape_.x(), window_size_, stride_.x()),
@@ -42,8 +42,7 @@ namespace yannpp {
                         int xs = x * stride_.x();
                         // pooling layer does max-pooling, selecting a maximum
                         // activation within the bounds of it's "window"
-                        auto input_slice = const_cast<array3d_t<T>&>(input)
-                                           .slice(
+                        auto input_slice = input.slice(
                                                index3d_t(xs, ys, z),
                                                index3d_t(xs + window_size_ - 1,
                                                          ys + window_size_ - 1,
@@ -57,7 +56,7 @@ namespace yannpp {
             return result;
         }
 
-        virtual array3d_t<T> backpropagate(array3d_t<T> const &error) override {
+        virtual array3d_t<T> backpropagate(array3d_t<T> &&error) override {
             auto &error_shape = error.shape();
             array3d_t<T> output(input_shape_, T(0));
             assert(error.shape() == max_index_.shape());

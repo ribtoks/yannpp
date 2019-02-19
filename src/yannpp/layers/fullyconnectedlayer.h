@@ -45,16 +45,16 @@ namespace yannpp {
             nabla_b_ = array3d_t<T>(shape_row(layer_out), 0);
         }
 
-        virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
+        virtual array3d_t<T> feedforward(array3d_t<T> &&input) override {
             input_shape_ = input.shape();
-            input_ = input.clone();
+            input_ = std::move(input);
             input_.flatten();
             // z = w*a + b
             output_ = dot21(weights_, input_); output_.add(bias_);
             return activator_.activate(output_);
         }
 
-        virtual array3d_t<T> backpropagate(array3d_t<T> const &error) override {
+        virtual array3d_t<T> backpropagate(array3d_t<T> &&error) override {
             array3d_t<T> delta, delta_next, delta_nabla_w;
             // delta(l) = (w(l+1) * delta(l+1)) [X] derivative(z(l))
             // (w(l+1) * delta(l+1)) comes as the gradient (error) from the "previous" layer

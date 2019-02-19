@@ -70,7 +70,7 @@ namespace yannpp {
         t_d feedforward(t_d const &a) {
             array3d_t<network2_t::data_type> input(a);
             for (auto &layer: layers_) {
-                input = layer->feedforward(input);
+                input = layer->feedforward(std::move(input));
             }
             return input;
         }
@@ -112,13 +112,13 @@ namespace yannpp {
 
             // feedforward input
             for (size_t i = 0; i < layers_size; i++) {
-                input = layers_[i]->feedforward(input);
+                input = layers_[i]->feedforward(std::move(input));
             }
 
             // backpropagate error
             array3d_t<network2_t::data_type> error(result);
             for (size_t i = layers_size; i-- > 0;) {
-                error = layers_[i]->backpropagate(error);
+                error = layers_[i]->backpropagate(std::move(error));
             }
         }
 

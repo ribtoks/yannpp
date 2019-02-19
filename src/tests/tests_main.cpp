@@ -9,6 +9,5 @@ int main(int argc, char **argv) {
     srand(123);
 
     ::testing::InitGoogleTest(&argc, argv);
-    srand(123);
     return RUN_ALL_TESTS();
 }

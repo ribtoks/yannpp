@@ -28,21 +28,25 @@ static yannpp::activator_t<float> softmax_activator(yannpp::stable_softmax_v<flo
     return yannpp::array3d_t<float>(yannpp::shape_row(x.size()), 1.0);});
 static yannpp::activator_t<float> relu_activator(yannpp::relu_v<float>, yannpp::relu_v<float>);
 
+using training_data_t = std::vector<std::tuple<yannpp::array3d_t<float>, yannpp::array3d_t<float>>>;
+
 class MnistTests: public ::testing::Test
 {
 protected:
-    virtual void SetUp() {
+    static void SetUpTestSuite() {
         yannpp::mnist_dataset_t mnist_dataset(STRINGIZE(DATADIR));
-        training_data_ = mnist_dataset.training_data();
+        s_training_data = mnist_dataset.training_data();
     }
 
-    virtual void TearDown() {
-        training_data_.clear();
+    static void TearDownTestSuite() {
+        s_training_data.clear();
     }
 
 protected:
-    std::vector<std::tuple<yannpp::array3d_t<float>, yannpp::array3d_t<float>>> training_data_;
+    static training_data_t s_training_data;
 };
+
+training_data_t MnistTests::s_training_data;
 
 TEST_F (MnistTests, LearnMnistDenseTest) {
     using namespace yannpp;
@@ -52,10 +56,11 @@ TEST_F (MnistTests, LearnMnistDenseTest) {
     float decay_rate = 20.f;
 
     // reduce size for testing
-    training_data_.resize(training_data_.size()/10);
+    decltype (s_training_data) training_data(s_training_data.begin(),
+                                             s_training_data.begin() + s_training_data.size()/10);
 
     sdg_optimizer_t<float> sdg_optimizer(mini_batch_size,
-                                         training_data_.size(),
+                                         training_data.size(),
                                          decay_rate,
                                          learning_rate);
     network2_t<float> network(
@@ -68,15 +73,15 @@ TEST_F (MnistTests, LearnMnistDenseTest) {
     size_t epochs = 2;
 
     network.init_layers();
-    network.train(training_data_,
+    network.train(training_data,
                   sdg_optimizer,
                   epochs,
                   mini_batch_size);
 
-    std::vector<size_t> eval_indices(training_data_.size() / 6);
+    std::vector<size_t> eval_indices(training_data.size() / 6);
     // generate indices from 1 to the number of inputs
-    std::iota(eval_indices.begin(), eval_indices.end(), 5*training_data_.size() / 6);
-    auto result = network.evaluate(training_data_, eval_indices);
+    std::iota(eval_indices.begin(), eval_indices.end(), 5*training_data.size() / 6);
+    auto result = network.evaluate(training_data, eval_indices);
 
     ASSERT_GT(result, 800);
 }
@@ -113,15 +118,22 @@ std::vector<yannpp::network2_t<float>::layer_type> create_dl_layers() {
 
 static yannpp::array3d_t<float> filter_initializer(yannpp::shape3d_t(5, 5, 1), 0.f, 1.f/5.f);
 static yannpp::array3d_t<float> bias_initializer(yannpp::shape3d_t(1, 1, 1), 0.f);
+static yannpp::array3d_t<float> fc1_initializer(yannpp::shape3d_t(30, 10*12*12, 1), 0.f, 1.f/sqrt(10*12));
+static yannpp::array3d_t<float> fc2_initializer(yannpp::shape3d_t(10, 30, 1), 0.f, 1.f/sqrt(10));
 
 void init_layers(std::vector<yannpp::network2_t<float>::layer_type> &layers) {
     using namespace yannpp;
+
     std::vector<array3d_t<float>> filters, biases;
     for (int i = 0; i < 10; i++) {
-        filters.push_back(filter_initializer);
-        biases.push_back(bias_initializer);
+        filters.emplace_back(filter_initializer.clone());
+        biases.emplace_back(bias_initializer.clone());
     }
     layers[0]->load(std::move(filters), std::move(biases));
+    // layers[1]-> skip pooling layer
+    layers[2]->load({fc1_initializer.clone()}, {array3d_t<float>(shape3d_t(30, 1, 1), 0.f)});
+    layers[3]->load({fc2_initializer.clone()}, {array3d_t<float>(shape3d_t(10, 1, 1), 0.f)});
+    // layers[4]-> skip crossentropy layer
 }
 
 TEST_F (MnistTests, DeepLearningLoopMnistTest) {
@@ -132,10 +144,11 @@ TEST_F (MnistTests, DeepLearningLoopMnistTest) {
     float decay_rate = 10.0;
 
     // reduce size for testing
-    training_data_.resize(training_data_.size()/30);
+    decltype (s_training_data) training_data(s_training_data.begin(),
+                                             s_training_data.begin() + s_training_data.size()/30);
 
     sdg_optimizer_t<float> sdg_optimizer(mini_batch_size,
-                                         training_data_.size(),
+                                         training_data.size(),
                                          decay_rate,
                                          learning_rate);
 
@@ -146,18 +159,18 @@ TEST_F (MnistTests, DeepLearningLoopMnistTest) {
     size_t epochs = 1;
 
     network.init_layers();
-    network.train(training_data_,
+    network.train(training_data,
                   sdg_optimizer,
                   epochs,
                   mini_batch_size);
 
-    const size_t training_size = 5 * training_data_.size() / 6;
-    std::vector<size_t> eval_indices(training_data_.size() - training_size);
+    const size_t training_size = 5 * training_data.size() / 6;
+    std::vector<size_t> eval_indices(training_data.size() - training_size);
     // generate indices from 1 to the number of inputs
     std::iota(eval_indices.begin(), eval_indices.end(), training_size);
-    auto result = network.evaluate(training_data_, eval_indices);
+    auto result = network.evaluate(training_data, eval_indices);
 
-    ASSERT_GT(result, eval_indices.size()/2);
+    ASSERT_GT(result, 2*eval_indices.size()/3);
 }
 
 TEST_F (MnistTests, DeepLearning2DMnistTest) {
@@ -168,11 +181,11 @@ TEST_F (MnistTests, DeepLearning2DMnistTest) {
     float decay_rate = 10.0;
 
     // reduce size for testing
-    training_data_.resize(training_data_.size()/30);
-
+    decltype (s_training_data) training_data(s_training_data.begin(),
+                                             s_training_data.begin() + s_training_data.size()/30);
 
     sdg_optimizer_t<float> sdg_optimizer(mini_batch_size,
-                                         training_data_.size(),
+                                         training_data.size(),
                                          decay_rate,
                                          learning_rate);
 
@@ -191,16 +204,16 @@ TEST_F (MnistTests, DeepLearning2DMnistTest) {
     size_t epochs = 1;
 
     network.init_layers();
-    network.train(training_data_,
+    network.train(training_data,
                   sdg_optimizer,
                   epochs,
                   mini_batch_size);
 
-    const size_t training_size = 5 * training_data_.size() / 6;
-    std::vector<size_t> eval_indices(training_data_.size() - training_size);
+    const size_t training_size = 5 * training_data.size() / 6;
+    std::vector<size_t> eval_indices(training_data.size() - training_size);
     // generate indices from 1 to the number of inputs
     std::iota(eval_indices.begin(), eval_indices.end(), training_size);
-    auto result = network.evaluate(training_data_, eval_indices);
+    auto result = network.evaluate(training_data, eval_indices);
 
-    ASSERT_GT(result, eval_indices.size()/2);
+    ASSERT_GT(result, 2*eval_indices.size()/3);
 }

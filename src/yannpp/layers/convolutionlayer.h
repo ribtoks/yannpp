@@ -155,10 +155,10 @@ namespace yannpp {
         using convolution_layer_base_t<T>::convolution_layer_base_t;
 
     public:
-        virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
+        virtual array3d_t<T> feedforward(array3d_t<T> &&input) override {
             assert(input.shape() == this->input_shape_);
 
-            this->input_ = input.clone();
+            this->input_ = std::move(input);
             const shape3d_t output_shape = this->get_output_shape();
             array3d_t<T> result(output_shape, 0);
 
@@ -201,7 +201,7 @@ namespace yannpp {
             return this->activator_.activate(this->output_);
         }
 
-        virtual array3d_t<T> backpropagate(array3d_t<T> const &error) override {
+        virtual array3d_t<T> backpropagate(array3d_t<T> &&error) override {
             // error shape was already transformed in the prev layer as delta(l+1)(*)rot180(w(l+1))
             assert(error.shape() == this->output_.shape());
             auto &error_shape = error.shape();
@@ -293,9 +293,9 @@ namespace yannpp {
         using convolution_layer_base_t<T>::convolution_layer_base_t;
 
     public:
-        virtual array3d_t<T> feedforward(array3d_t<T> const &input) override {
+        virtual array3d_t<T> feedforward(array3d_t<T> &&input) override {
             assert(input.shape() == this->input_shape_);
-            this->input_ = input.clone();
+            this->input_ = std::move(input);
             // Extracts image patches from the input to form a
             //  [out_height * out_width, filter_height * filter_width * in_channels]
             this->input_patches_ = input_patches();
@@ -323,7 +323,7 @@ namespace yannpp {
             return this->activator_.activate(this->output_);
         }
 
-        virtual array3d_t<T> backpropagate(array3d_t<T> const &error) override {
+        virtual array3d_t<T> backpropagate(array3d_t<T> &&error) override {
             // error shape was already transformed in the prev layer as delta(l+1)(*)rot180(w(l+1))
             assert(error.shape() == this->output_.shape());
             // gradients with regards to input of this layer
@@ -353,8 +353,8 @@ namespace yannpp {
                 for (size_t p = 0; p < patches_size; p++) {
                     nabla_w.push_back(inner_product(deltas[d], input_patches[p]));
                 }
-                this->nabla_weights_[d] = array3d_t<T>(this->filter_shape_, std::move(nabla_w));
-                this->nabla_biases_[d](0) = deltas[d].sum();
+                this->nabla_weights_[d].add(array3d_t<T>(this->filter_shape_, std::move(nabla_w)));
+                this->nabla_biases_[d](0) += deltas[d].sum();
             }
 
             // precreate placeholders for sum

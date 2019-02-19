@@ -7,6 +7,9 @@ namespace yannpp {
     std::vector<std::vector<size_t>> batch_indices(size_t size, size_t batch_size) {
         std::vector<size_t> indices(size, 0);
         std::iota(indices.begin(), indices.end(), 0);
+
+        // to make 2d and loop convolution layers produce same results
+        // one has to remove randomness - comment out next line
         std::random_shuffle(indices.begin(), indices.end());
 
         std::vector<std::vector<size_t>> batches;

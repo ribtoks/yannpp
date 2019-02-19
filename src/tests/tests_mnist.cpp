@@ -139,7 +139,7 @@ void init_layers(std::vector<yannpp::network2_t<float>::layer_type> &layers) {
 TEST_F (MnistTests, DeepLearningLoopMnistTest) {
     using namespace yannpp;
 
-    size_t mini_batch_size = 40;
+    size_t mini_batch_size = 10;
     float learning_rate = 0.001;
     float decay_rate = 10.0;
 
@@ -156,7 +156,7 @@ TEST_F (MnistTests, DeepLearningLoopMnistTest) {
     init_layers(layers);
     network2_t<float> network(std::move(layers));
 
-    size_t epochs = 2;
+    size_t epochs = 1;
 
     network.init_layers();
     network.train(training_data,
@@ -170,13 +170,13 @@ TEST_F (MnistTests, DeepLearningLoopMnistTest) {
     std::iota(eval_indices.begin(), eval_indices.end(), training_size);
     auto result = network.evaluate(training_data, eval_indices);
 
-    ASSERT_GT(result, 2*eval_indices.size()/3);
+    ASSERT_GT(result, eval_indices.size()/2);
 }
 
 TEST_F (MnistTests, DeepLearning2DMnistTest) {
     using namespace yannpp;
 
-    size_t mini_batch_size = 40;
+    size_t mini_batch_size = 10;
     float learning_rate = 0.001;
     float decay_rate = 10.0;
 
@@ -215,5 +215,5 @@ TEST_F (MnistTests, DeepLearning2DMnistTest) {
     std::iota(eval_indices.begin(), eval_indices.end(), training_size);
     auto result = network.evaluate(training_data, eval_indices);
 
-    ASSERT_GT(result, 2*eval_indices.size()/3);
+    ASSERT_GT(result, eval_indices.size()/2);
 }
